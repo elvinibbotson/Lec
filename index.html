@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+  	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  	<title>trouve</title>
+  	<link rel="stylesheet" type="text/css" href="trouveStyles.css">
+  	<link rel="manifest" href="trouveManifest.json">
+  	<meta name="application-name" content="trouve">
+</head>
+
+<body>
+
+<header class="header">
+    <div id="heading">
+        <span id="headerTitle">date destination miles to% %/km</span>
+        <button id="buttonEdit" class='edit-button'></button>
+    </div>
+</header>
+
+<div id="listPanel"><ul id="list" class="logList"></ul></div>
+<div id='graphPanel'><canvas id='canvas' x='0' y='0' width='100%' height='100%'></canvas></div>
+<div id='buttonNew' class='round-button'><img src='newButton24px.svg'/></div>
+  
+<div id="importDialog" class="dialog">
+	<div class="dialog-title">Load from saved file</div>
+	<input type="file" id="fileChooser">
+	<div class="dialog-body">Imported data will replace any records you already have.</div>
+    <div class="dialog-buttons">
+		<button id="buttonCancelImport" class="cancel-button"></button>
+	</div>
+</div>
+
+<div id="logDialog" class="dialog">
+    <div class="dialog-body">date <input type="date" id="logDate"/>
+    <span style='float:right;'>charge<input type='checkbox' class='check' id='logCharge'/></span>
+    </div>
+    <div class="dialog-body">destination <input type='text' id="logDestination"/>
+    <span style='float:right;'>distance <input type='number' id='logDistance' min='0' max='99'/> miles</span>
+    </div>
+    <div class="dialog-body">to <input type='number' id='logPercent'min='0' max='99'/>% charge</div>
+    <div class='dialog-body'>a/c+lights <input type='range' id='logExtra' name='logExtra' min='0' max='1' step='0.25'></div>
+    <div class="dialog-buttons">
+	    <button id="buttonDeleteLog" class="delete-button"></button>
+	  	<button id="buttonCancelLog" class="cancel-button"></button>
+      	<button id="buttonSaveLog" class="save-button"></button>  
+    </div>
+</div>
+
+<div id="deleteDialog" class="dialog">
+	<div class="dialog-title">Delete</div>
+	<div  id="deleteText" class="dialog-body">text</div>
+	<div class="dialog-buttons">
+        <button id="buttonDeleteConfirm" class="delete-button"></button>
+       	<button id="buttonCancelDelete" class="cancel-button"></button>
+	</div>
+</div>
+
+<script src="TrouveApp.js" async></script>
+
+</body>
+
+</html>
