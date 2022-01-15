@@ -206,15 +206,24 @@ function populateList() {
 
 // DRAW GRAPH
 function drawGraph() {
-	canvas.lineWidth=5;
+	var x=0;
+	var ch=scr.h/2;
+	var h=ch/100;
+	var y=ch;
+	// last.distance=last.percent=0;
 	canvas.strokeStyle='#ffff00';
-	canvas.fillStyle='#ffff00';
+	canvas.lineWidth=3;
 	canvas.beginPath();
-    canvas.moveTo(0,0);
-    canvas.lineTo(100,100);
-    canvas.arc(100,100,5,0,2*Math.PI,true);
+	canvas.moveTo(x,y);
+	for(var i=0;i<logs.length;i++) { // plot trips and charges
+			console.log('draw charge bar '+i)
+			x+=logs[i].distance*5; // 5 px/mile
+			y=ch-logs[i].percent*h; // h px/%
+			canvas.lineTo(x,y);
+			canvas.arc(x,y,3,0,2*Math.PI,true);
+			canvas.moveTo(x,y);
+	}
     canvas.stroke();
-    canvas.fill();
 }
   
 // IMPORT FILE
@@ -297,9 +306,6 @@ console.log('screen size: '+scr.w+'x'+scr.h+'px');
 id("canvas").width=scr.w;
 id("canvas").height=scr.h/2;
 canvas=id('canvas').getContext('2d');
-canvas.font = '40pt Calibri';
-canvas.fillStyle = 'blue';
-canvas.fillText('GRAPH', 150, 100);
 lastSave=window.localStorage.getItem('trouveSave'); // get month of last backup
 console.log('lastSave: '+lastSave);
 var request=window.indexedDB.open("trouveDB");
