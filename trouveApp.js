@@ -206,7 +206,15 @@ function populateList() {
 
 // DRAW GRAPH
 function drawGraph() {
-	
+	canvas.lineWidth=5;
+	canvas.strokeStyle='#ffff00';
+	canvas.fillStyle='#ffff00';
+	canvas.beginPath();
+    canvas.moveTo(0,0);
+    canvas.lineTo(100,100);
+    canvas.arc(100,100,5,0,2*Math.PI,true);
+    canvas.stroke();
+    canvas.fill();
 }
   
 // IMPORT FILE
@@ -224,7 +232,7 @@ id("fileChooser").addEventListener('change',function() {
     	var dbTransaction=db.transaction('logs',"readwrite");
     	var dbObjectStore=dbTransaction.objectStore('logs');
     	for(var i=0;i<logs.length;i++) {
-    		console.log("add "+logs[i].text);
+    		console.log("add log "+i);
     		var request = dbObjectStore.add(logs[i]);
     		request.onsuccess = function(e) {
     			console.log(logs.length+" logs added to database");
@@ -287,7 +295,7 @@ scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
 id("canvas").width=scr.w;
-id("canvas").height=scr.h;
+id("canvas").height=scr.h/2;
 canvas=id('canvas').getContext('2d');
 canvas.font = '40pt Calibri';
 canvas.fillStyle = 'blue';
