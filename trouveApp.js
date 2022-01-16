@@ -11,6 +11,7 @@ db=null;
 logs=[];
 log=null;
 logIndex=null;
+currentLog=null;
 tags=[];
 canvas=null;
 lastSave=-1;
@@ -171,7 +172,8 @@ function populateList() {
   			 	var listItem = document.createElement('li');
 				listItem.index=i;
 	 		 	listItem.classList.add('log-item');
-				listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
+				// listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
+				listItem.addEventListener('click', selectLog);
 				d=logs[i].date;
 				mon=parseInt(d.substr(5,2))-1;
 				mon*=3;
@@ -207,7 +209,7 @@ function populateList() {
 // DRAW GRAPH
 function drawGraph() {
 	var x=0;
-	var ch=scr.h/2;
+	var ch=scr.h/4;
 	var h=ch/100;
 	var y=ch;
 	// last.distance=last.percent=0;
@@ -224,6 +226,16 @@ function drawGraph() {
 			canvas.moveTo(x,y);
 	}
     canvas.stroke();
+}
+
+function selectLog() {
+	if(currentLog) currentLog.children[0].style.backgroundColor='gray'; // deselect any previously selected item
+    itemIndex=parseInt(logIndex);
+	log=logs[logIndex];
+	console.log("selected item: "+logIndex);
+	currentLog=id('list').children[logIndex];
+	// currentLog.children[0].style.backgroundColor='black'; // highlight new selection
+	currentLog.style.backgroundColor='black'; // highlight new selection
 }
   
 // IMPORT FILE
