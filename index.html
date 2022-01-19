@@ -11,6 +11,12 @@
 </head>
 
 <body>
+<header class="header">
+    <div id="heading">
+        <span id="headerTitle">Trouve - average: </span>
+        <span id='average'></span>% charge/mile;
+    </div>
+</header>
 <div id="listPanel"><ul id="list" class="logList"></ul></div>
 <div id='graphPanel'><canvas id='canvas' x='0' y='0' width='100%' height='100%'></canvas></div>
 <div id='buttonNew' class='round-button'><img src='newButton24px.svg'/></div>
@@ -26,13 +32,9 @@
 
 <div id="logDialog" class="dialog">
     <div class="dialog-body">date <input type="date" id="logDate"/>
-    <span style='float:right;'>charge<input type='checkbox' class='check' id='logCharge'/></span>
+    <span style='float:right;'><input type='number' id='logMiles' min='0' max='99'/> miles</span>
     </div>
-    <div class="dialog-body">destination <input type='text' id="logDestination"/>
-    <span style='float:right;'>distance <input type='number' id='logDistance' min='0' max='99'/> miles</span>
-    </div>
-    <div class="dialog-body">to <input type='number' id='logPercent'min='0' max='99'/>% charge</div>
-    <div class='dialog-body'>a/c+lights <input type='range' id='logExtra' name='logExtra' min='0' max='1' step='0.25'></div>
+    <div class="dialog-body">charge from <input type='number' id='logStartCharge' min='0' max='99'/> to <input type='number' id='logEndCharge' min='0' max='99'/>%</div>
     <div class="dialog-buttons">
 	    <button id="buttonDeleteLog" class="delete-button"></button>
 	  	<button id="buttonCancelLog" class="cancel-button"></button>

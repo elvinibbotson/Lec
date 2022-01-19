@@ -16,6 +16,7 @@ tags=[];
 canvas=null;
 lastSave=-1;
 months="JanFebMarAprMayJunJulAugSepOctNovDec";
+capacity=17.6; // usable battery capacity (kWh)
 
 // EVENT LISTENERS
 
@@ -25,11 +26,9 @@ id('buttonNew').addEventListener('click', function() { // show the log dialog
     toggleDialog('logDialog',true);
 	var d=new Date().toISOString();
 	id('logDate').value=d.substr(0,10);
-	id('logCharge').checked=false;
-	id('logDestination').value="";
-	id('logDistance').value=0;
-	id('logPercent').value=0;
-	id('logExtra').value=0.5;
+	id('logMiles').value=0;
+	id('logStartCharge').value=0;
+	id('logEndCharge').value=0;
 	log={};
 	logIndex=null;
 	id("buttonDeleteLog").disabled=true;
@@ -39,13 +38,11 @@ id('buttonNew').addEventListener('click', function() { // show the log dialog
 // SAVE NEW/EDITED LOG
 id('buttonSaveLog').addEventListener('click', function() {
 	log.date=id('logDate').value;
-	log.charge=id('logCharge').checked;
-	log.destination=id('logDestination').value;
-	log.distance=id('logDistance').value;
-	log.percent=id('logPercent').value;
-	log.extra=id('logExtra').value;
+	log.miles=id('logMiles').value;
+	log.startCharge=id('logStartCharge').value;
+	log.endCharge=id('logEndCharge').value;
     toggleDialog('logDialog',false);
-	console.log("save log - date: "+log.date+' '+log.distance+' miles to '+log.percent+'%');
+	console.log("save log - date: "+log.date+' '+log.miles+' miles');
 	var dbTransaction=db.transaction('logs',"readwrite");
 	console.log("indexedDB transaction ready");
 	var dbObjectStore=dbTransaction.objectStore('logs');
@@ -136,11 +133,10 @@ function openLog() {
 	console.log("open log: "+logIndex);
 	log=logs[logIndex];
 	toggleDialog('logDialog',true);
-	id('logDateField').value=log.date;
-	id('logDaysField').value=log.days;
-	id('logTextField').value=log.text;
-	if(!log.tags) log.tags=[];
-	listLogTags();
+	id('logDate').value=log.date;
+	id('logMiles').value=log.miles;
+	id('logStartCharge').value=log.startCharge;
+	id('logEndCharge').value=log.endCharge;
 	id('buttonDeleteLog').disabled=false;
 	id('buttonDeleteLog').style.color='red';
 }
@@ -161,6 +157,9 @@ function populateList() {
 			cursor.continue();
     	}
 		else {
+			var total={};
+			total.miles=0;
+			total.charge=0;
 			console.log("list "+logs.length+" logs");
 			logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
 			console.log("populate list");
@@ -168,37 +167,85 @@ function populateList() {
 			var html="";
 			var d="";
 			var mon=0;
+			var ppm=0;
   			for(var i=logs.length-1; i>=0; i--) { // list latest first
-  			 	var listItem = document.createElement('li');
+  			 	var listItem=document.createElement('li');
 				listItem.index=i;
 	 		 	listItem.classList.add('log-item');
-				// listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
-				listItem.addEventListener('click', selectLog);
+				listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
+				// listItem.addEventListener('click', openLog);
+				var itemText=document.createElement('span');
 				d=logs[i].date;
 				mon=parseInt(d.substr(5,2))-1;
 				mon*=3;
 				d=d.substr(8,2)+" "+months.substr(mon,3)+" "+d.substr(2,2);
-				html="<span class='log-date'>"+d+" ";
-				html+="<span class='log-text'>";
-				if(logs[i].charge) html+="CHARGE to... ";
-				else html+=logs[i].destination+" "+logs[i].distance+"mi ";
-				html+=logs[i].percent+"% ";
+				html=d+' '+logs[i].miles+'miles '+logs[i].startCharge+'-'+logs[i].endCharge+'%';
+				itemText.innerText=html;
+				listItem.appendChild(itemText);
+				var itemRate=document.createElement('span');
+				itemRate.classList.add('right');
+				if(i>0) {
+					total.miles+=(logs[i].miles-logs[i-1].miles);
+					total.charge+=(logs[i-1].endCharge-logs[i].startCharge);
+					ppm=(logs[i-1].endCharge-logs[i].startCharge)/(logs[i].miles-logs[i-1].miles);
+					ppm*=10;
+					ppm=Math.round(ppm);
+					ppm/=10; // one decimal place
+					itemRate.innerText=ppm;
+					if(ppm%1==0) itemRate.innerText+='.0';
+					itemRate.innerText+='ppm';
+					/*
+					var miles=logs[i].miles-logs[i-1].miles; // miles driven between charges
+					total.mile+=miles;
+					var kwh=(logs[i-1].endCharge-logs[i].startCharge)*17.6/100; // kWh consumed between charges
+					total.kwh+=kwh;
+					miles/=kwh; // energy consumption: miles/kWh
+					miles*=10;
+					miles=Math.round(miles);
+					miles*=10; // nearest decimal point
+					itemRate.innerText=miles+'mi/kWh';
+					*/
+				}
+				
+				listItem.appendChild(itemRate);
+				/*
+				if(logs[i].charge) html+="CHARGE to... "+logs[i].percent+'%';
+				else html+=logs[i].destination; // +" "+logs[i].distance+"mi ";
+				itemText.innerText=html;
+				listItem.appendChild(itemText);
 				if(!logs[i].charge) {
+					var itemRate=document.createElement('span');
+					itemRate.classList.add('right');
 					var n=(logs[i-1].percent-logs[i].percent);
 					console.log(n+'% used');
 					n/=logs[i].distance;
 					n*=10;
 					n=Math.floor(n);
-					n/=10;
-					html+=n+"%/mi <img src='"+logs[i].extra*4+"button24px.svg'";
+					if(n%10==0) n=n/10+'.0';
+					else n/=10;
+					itemRate.innerText=n+'%/mi';
+					listItem.appendChild(itemRate);
+					// html+=n+"%/mi <img src='"+logs[i].extra*4+"button24px.svg'";
+					var itemPercent=document.createElement('span');
+					itemPercent.classList.add('right');
+					itemPercent.innerText=logs[i].percent+'%';
+					listItem.appendChild(itemPercent);
+					var itemDist=document.createElement('span');
+					itemDist.classList.add('right');
+					itemDist.innerHTML=logs[i].distance+'mi <img src="'+logs[i].extra*4+'button24px.svg"/>';
+					listItem.appendChild(itemDist);
 				}
-				html+="</span>";
-				listItem.innerHTML=html;
+				*/
 		  		id('list').appendChild(listItem);
   			}
+  			ppm=total.charge/total.miles;
+			ppm*=10;
+			ppm=Math.round(ppm);
+			ppm/=10; // one decimal place
+			id('average').innerText=ppm;
 	        var thisMonth=new Date().getMonth();
 	        if(thisMonth!=lastSave) backup(); // monthly backups
-	        drawGraph();
+	        // drawGraph();
   		}
 	}
 	request.onerror=function(event) {
