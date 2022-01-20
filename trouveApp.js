@@ -26,9 +26,9 @@ id('buttonNew').addEventListener('click', function() { // show the log dialog
     toggleDialog('logDialog',true);
 	var d=new Date().toISOString();
 	id('logDate').value=d.substr(0,10);
-	id('logMiles').value=0;
-	id('logStartCharge').value=0;
-	id('logEndCharge').value=0;
+	id('logMiles').value=null;
+	id('logStartCharge').value=null;
+	id('logEndCharge').value=null;
 	log={};
 	logIndex=null;
 	id("buttonDeleteLog").disabled=true;

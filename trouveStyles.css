@@ -61,7 +61,7 @@ input {
 #heading {
 	height: 34px;
 	font-size: 1.5em;
-	background-color: black;
+	background-color: steelblue;
 }
 
 #listPanel {
@@ -116,7 +116,6 @@ input {
 .logList {
     margin: 0;
     list-style: none;
-    background-color: gray;
     display: flex;
     flex-direction: column;
     transition: opacity 0.2s ease-in-out;
