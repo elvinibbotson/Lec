@@ -413,7 +413,7 @@ request.onsuccess=function(event) {
 		    		percent=0;
 		    		month=mm;
 		    		months.push(log);
-		    		console.log('new log item - date: '+log.date+'; miles: '+log.miles+'; percent: '+log.percent);
+		    		alert('new log item - date: '+log.date+'; miles: '+log.miles+'; percent: '+log.percent);
 		    	}
 		    	else { // tot up percentage charges for month
 		    		percent+=(parseInt(logs[i].endCharge)-parseInt(logs[i].startCharge));
