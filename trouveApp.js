@@ -389,7 +389,7 @@ request.onsuccess=function(event) {
 		    }
 		    logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
 		    
-		    // TEMPORARY CONVERTER
+		    /* TEMPORARY CONVERTER
 		    var months=[]; // new array for monthly logs
 		    var month=0; // latest month
 		    var mm;
@@ -436,6 +436,7 @@ request.onsuccess=function(event) {
     		}
     		alert('MONTH DATA ADDED');
 		    // END
+		    */
 		    populateList();
 	    }
     };
