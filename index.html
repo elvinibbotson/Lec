@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 	<meta charset="utf-8">
   	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,18 +8,12 @@
   	<link rel="manifest" href="trouveManifest.json">
   	<meta name="application-name" content="trouve">
 </head>
-
 <body>
 <header class="header">
-    <div id="heading">
-        <span id="headerTitle">Trouve - average: </span>
-        <span id='average'></span>% charge/mile;
-    </div>
+    <div id="heading"></div>
 </header>
 <div id="listPanel"><ul id="list" class="logList"></ul></div>
-<div id='graphPanel'><canvas id='canvas' x='0' y='0' width='100%' height='100%'></canvas></div>
-<div id='buttonNew' class='round-button'><img src='newButton24px.svg'/></div>
-  
+<div id='buttonNew' class='action-button'><img src='newButton24px.svg'/></div>
 <div id="importDialog" class="dialog">
 	<div class="dialog-title">Load from saved file</div>
 	<input type="file" id="fileChooser">
@@ -29,7 +22,6 @@
 		<button id="buttonCancelImport" class="cancel-button"></button>
 	</div>
 </div>
-
 <div id="logDialog" class="dialog">
     <div class="dialog-body">date <input type="date" id="logDate"/>
     <span style='float:right;'><input type='number' id='logMiles' min='0' max='99'/> miles</span>
@@ -41,7 +33,6 @@
       	<button id="buttonSaveLog" class="save-button"></button>  
     </div>
 </div>
-
 <div id="deleteDialog" class="dialog">
 	<div class="dialog-title">Delete</div>
 	<div  id="deleteText" class="dialog-body">text</div>
@@ -50,9 +41,6 @@
        	<button id="buttonCancelDelete" class="cancel-button"></button>
 	</div>
 </div>
-
 <script src="trouveApp.js" async></script>
-
 </body>
-
 </html>

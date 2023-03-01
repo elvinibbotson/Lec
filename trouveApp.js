@@ -13,7 +13,6 @@ log=null;
 logIndex=null;
 currentLog=null;
 tags=[];
-canvas=null;
 lastSave=-1;
 months="JanFebMarAprMayJunJulAugSepOctNovDec";
 capacity=17.6; // usable battery capacity (kWh)
@@ -159,6 +158,7 @@ function populateList() {
 		else {
 			var total={};
 			total.miles=0;
+			total.percent=0;
 			total.charge=0;
 			console.log("list "+logs.length+" logs");
 			logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
@@ -167,8 +167,9 @@ function populateList() {
 			var html="";
 			var d="";
 			var mon=0;
-			var ppm=0;
-  			for(var i=logs.length-1; i>=0; i--) { // list latest first
+			var ppm=0; // percentage charge per mile
+			var mpk=0; // miles per kWh
+  			for(var i=0; i<logs.length; i++) { // list latest first
   			 	var listItem=document.createElement('li');
 				listItem.index=i;
 	 		 	listItem.classList.add('log-item');
@@ -178,22 +179,37 @@ function populateList() {
 				d=logs[i].date;
 				mon=parseInt(d.substr(5,2))-1;
 				mon*=3;
-				d=d.substr(8,2)+" "+months.substr(mon,3)+" "+d.substr(2,2);
-				html=d+' '+logs[i].miles+'miles '+logs[i].startCharge+'-'+logs[i].endCharge+'%';
-				itemText.innerText=html;
+				if(d.substr(8,2)=='00') html=months.substr(mon,3)+" "+d.substr(2,2); // month logs
+				else d=d.substr(8,2)+' '+months.substr(mon,3)+" "+d.substr(2,2);
+				if(logs[i].percent==null) html=d+' '+logs[i].miles+'miles '+logs[i].startCharge+'-'+logs[i].endCharge+'%';
+				// itemText.innerText=html;
 				listItem.appendChild(itemText);
 				var itemRate=document.createElement('span');
 				itemRate.classList.add('right');
-				if(i>0) {
+				if(logs[i].percent) { // month logs
+					total.miles+=logs[i].miles;
+					total.percent+=logs[i].percent;
+					total.charge+=capacity*logs[i].percent/100;
+					mpk=logs[i].miles/(capacity*logs[i].percent/100);
+					mpk=Math.floor(mpk*10)/10;
+					itemText.innerText=html+': '+mpk+' mi/kWh';
+					// itemRate.innerText=mpk+' mi/kWh';
+					listItem.style.width=scr.w*mpk/7+'px';
+					console.log('screen: '+scr.w+'px; mpk: '+mpk);
+				}
+				else if(i>0) { // current month's logs
+					itemText.innerText=html;
+					/*
 					total.miles+=(logs[i].miles-logs[i-1].miles);
 					total.charge+=(logs[i-1].endCharge-logs[i].startCharge);
+					*/
 					ppm=(logs[i-1].endCharge-logs[i].startCharge)/(logs[i].miles-logs[i-1].miles);
 					ppm*=10;
 					ppm=Math.round(ppm);
 					ppm/=10; // one decimal place
 					itemRate.innerText=ppm;
 					if(ppm%1==0) itemRate.innerText+='.0';
-					itemRate.innerText+='ppm';
+					itemRate.innerText+='%/mi';
 					/*
 					var miles=logs[i].miles-logs[i-1].miles; // miles driven between charges
 					total.mile+=miles;
@@ -206,7 +222,6 @@ function populateList() {
 					itemRate.innerText=miles+'mi/kWh';
 					*/
 				}
-				
 				listItem.appendChild(itemRate);
 				/*
 				if(logs[i].charge) html+="CHARGE to... "+logs[i].percent+'%';
@@ -238,11 +253,16 @@ function populateList() {
 				*/
 		  		id('list').appendChild(listItem);
   			}
-  			ppm=total.charge/total.miles;
-			ppm*=10;
-			ppm=Math.round(ppm);
-			ppm/=10; // one decimal place
-			id('average').innerText=ppm;
+  			console.log('totals: '+total.miles+' miles; '+total.charge+' kWh; '+total.percent+' %/mi');
+  			ppm=total.percent/total.miles;
+  			ppm*=10;
+  			ppm=Math.round(ppm);
+  			ppm/=10;
+  			mpk=total.miles/total.charge;
+			mpk*=10;
+			mpk=Math.round(mpk);
+			mpk/=10; // one decimal place
+			id('heading').innerText=mpk+' miles/kWh; '+ppm+' %/mile';
 	        var thisMonth=new Date().getMonth();
 	        if(thisMonth!=lastSave) backup(); // monthly backups
 	        // drawGraph();
@@ -251,28 +271,6 @@ function populateList() {
 	request.onerror=function(event) {
 		console.log("cursor request failed");
 	}
-}
-
-// DRAW GRAPH
-function drawGraph() {
-	var x=0;
-	var ch=scr.h/4;
-	var h=ch/100;
-	var y=ch;
-	// last.distance=last.percent=0;
-	canvas.strokeStyle='#ffff00';
-	canvas.lineWidth=3;
-	canvas.beginPath();
-	canvas.moveTo(x,y);
-	for(var i=0;i<logs.length;i++) { // plot trips and charges
-			console.log('draw charge bar '+i)
-			x+=logs[i].distance*5; // 5 px/mile
-			y=ch-logs[i].percent*h; // h px/%
-			canvas.lineTo(x,y);
-			canvas.arc(x,y,3,0,2*Math.PI,true);
-			canvas.moveTo(x,y);
-	}
-    canvas.stroke();
 }
 
 function selectLog() {
@@ -362,9 +360,6 @@ function backup() {
 scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
-id("canvas").width=scr.w;
-id("canvas").height=scr.h/2;
-canvas=id('canvas').getContext('2d');
 lastSave=window.localStorage.getItem('trouveSave'); // get month of last backup
 console.log('lastSave: '+lastSave);
 var request=window.indexedDB.open("trouveDB");
@@ -393,6 +388,54 @@ request.onsuccess=function(event) {
 		        return
 		    }
 		    logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
+		    
+		    // TEMPORARY CONVERTER
+		    var months=[]; // new array for monthly logs
+		    var month=0; // latest month
+		    var mm;
+		    var miles=0; // total miles for month
+		    // var startMiles=0;
+		    var percent=0; // total percent charge for month
+		    var log={};
+		    var i=0;
+		    while(i<logs.length) {
+		    	mm=parseInt(logs[i].date.substr(5,2)); // 0-11
+		    	if(i<1) {
+		    		month=mm;
+		    		miles=parseInt(logs[i].miles);
+		    	}
+		    	if(i>0 && mm!=month) { // new month - create log item for previous month
+		    		log={};
+		    		log.date=logs[i-1].date.substr(0,8)+'00'; // disregard day
+		    		log.miles=parseInt(logs[i].miles)-miles;
+		    		miles=parseInt(logs[i].miles);
+		    		log.percent=percent;
+		    		percent=0;
+		    		month=mm;
+		    		months.push(log);
+		    		console.log('new log item - date: '+log.date+'; miles: '+log.miles+'; percent: '+log.percent);
+		    	}
+		    	else { // tot up percentage charges for month
+		    		percent+=(parseInt(logs[i].endCharge)-parseInt(logs[i].startCharge));
+		    	}
+		    	i++;
+		    }
+		    console.log(months.length+' months logged');
+		    var dbTransaction=db.transaction('logs',"readwrite");
+    		console.log("indexedDB transaction ready");
+    		var dbObjectStore=dbTransaction.objectStore('logs');
+    		console.log("indexedDB objectStore ready");
+    		for(i=0;i<months.length;i++) {
+    			var addRequest=dbObjectStore.add(months[i]);
+    			addRequest.osuccess=function(event) {
+    				console.log('month '+i+' added to database');
+    			}
+    			addRequest.onerror=function(event) {
+    				console.log('error adding month '+i);
+    			}
+    		}
+    		alert('MONTH DATA ADDED');
+		    // END
 		    populateList();
 	    }
     };
