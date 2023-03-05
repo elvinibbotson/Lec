@@ -7,22 +7,38 @@ function id(el) {
 	
 // GLOBAL VARIABLES
 var scr={}; // screen size .w & .h and cursor coordinates .x & .y
-db=null;
-logs=[];
-log=null;
-logIndex=null;
-currentLog=null;
-tags=[];
-lastSave=-1;
-months="JanFebMarAprMayJunJulAugSepOctNovDec";
-capacity=17.6; // usable battery capacity (kWh)
+var db=null;
+var logs=[]; // monthly logs - from database
+var charges=[]; // this month's charges
+var log=null;
+var charge=null;
+var logIndex=null;
+var currentLog=null
+var currentDialog;
+var startX;
+var lastSave=-1;
+var thisMonth=0;
+var months="JanFebMarAprMayJunJulAugSepOctNovDec";
+var capacity=17.6; // usable battery capacity (kWh)
 
 // EVENT LISTENERS
+id('main').addEventListener('touchstart', function(event) {
+    // console.log(event.changedTouches.length+" touches");
+    startX=event.changedTouches[0].clientX;
+})
+id('main').addEventListener('touchend', function(event) {
+    var dragX=event.changedTouches[0].clientX-startX;
+    if(dragX<-50) { // drag left
+    	if(currentDialog) toggleDialog(currentDialog,false); // close an open dialog
+    }
+})
+
+// TAP HEADER - DATA MENU
+id('heading').addEventListener('click',function() {toggleDialog('dataDialog',true);})
 
 // NEW BUTTON
 id('buttonNew').addEventListener('click', function() { // show the log dialog
 	console.log("show add jotting dialog with today's date, 1 day duration, blank text field and delete button disabled");
-    toggleDialog('logDialog',true);
 	var d=new Date().toISOString();
 	id('logDate').value=d.substr(0,10);
 	id('logMiles').value=null;
@@ -30,114 +46,148 @@ id('buttonNew').addEventListener('click', function() { // show the log dialog
 	id('logEndCharge').value=null;
 	log={};
 	logIndex=null;
-	id("buttonDeleteLog").disabled=true;
-	id('buttonDeleteLog').style.color='gray';
+	id("buttonDeleteLog").style.display='none';
+	id('buttonAddLog').style.display='block';
+	id('buttonSaveLog').style.display='none';
+	toggleDialog('logDialog',true);
 });
 
-// SAVE NEW/EDITED LOG
-id('buttonSaveLog').addEventListener('click', function() {
-	log.date=id('logDate').value;
-	log.miles=id('logMiles').value;
-	log.startCharge=id('logStartCharge').value;
-	log.endCharge=id('logEndCharge').value;
+// ADD NEW CHARGE LOG
+id('buttonAddLog').addEventListener('click', function() {
+	var month=parseInt(id('logDate').value.substr(5,2));
+	console.log('thisMonth: '+thisMonth+'; month: '+month);
+	if(thisMonth===null) {
+		thisMonth=month;
+		window.localStorage.setItem('thisMonth',month);
+	}
+	/*
+	else if(month!=this.month) {
+		alert('too early!');
+		toggleDialog('logDialog',false);
+		return;
+	}
+	*/
+	else if(month==thisMonth) addChargeLog();
+	else { // first entry for another month
+		console.log('another month - create new month log');
+		log={}; // create new month log from last month's charges
+		log.date=charges[0].date.substr(0,8)+'00'; // null day for month logs
+		log.miles=parseInt(id('logMiles').value)-charges[0].miles; // total miles for month
+		log.percent=0; // tot up percent charge for month
+		for(var i in charges) log.percent+=(charges[i].endCharge-charges[i].startCharge);
+		console.log('new log: '+log.date+' '+log.miles+' miles '+log.percent+'%');
+		var dbTransaction=db.transaction('logs',"readwrite");
+		var dbObjectStore=dbTransaction.objectStore('logs');
+		var addRequest=dbObjectStore.add(log);
+		addRequest.onsuccess=function(event) {
+			charges=[]; // clear charges array
+			console.log('month log saved');
+			addChargeLog();
+		}
+		addRequest.onerror=function(event) {console.log('error adding month '+i);}
+		window.localStorage.setItem('thisMonth',month);
+		console.log('saved thisMonth: '+month);
+	}
+	
+    // for(var i in charges) console.log('charge '+i+': '+charges[i].date+'; '+charges[i].miles+'; '+(charges[i].endCharge-charges[i].startCharge));
+});
+function addChargeLog() {
+	charge={};
+	charge.date=id('logDate').value;
+	charge.miles=parseInt(id('logMiles').value);
+	charge.startCharge=parseInt(id('logStartCharge').value);
+	charge.endCharge=parseInt(id('logEndCharge').value);
+	console.log('add charge log: '+charge.date+'; '+charge.miles+'; '+charge.startCharge+'-'+charge.endCharge);
+	charges.push(charge); // save to charges[]
+	var chargeData=JSON.stringify(charges);
+	window.localStorage.setItem('chargeData',chargeData); 
     toggleDialog('logDialog',false);
-	console.log("save log - date: "+log.date+' '+log.miles+' miles');
-	var dbTransaction=db.transaction('logs',"readwrite");
-	console.log("indexedDB transaction ready");
-	var dbObjectStore=dbTransaction.objectStore('logs');
-	console.log("indexedDB objectStore ready");
-	console.log("save log - logIndex is "+logIndex);
-	if(logIndex===null) { // add new log
-		var request=dbObjectStore.add(log);
-		request.onsuccess=function(event) {
-			console.log("new log added: "+log.text);
-			populateList();
-		};
-		request.onerror=function(event) {console.log("error adding new log");};
-	}
-	else { // update existing log
-		request=dbObjectStore.put(log); // update log in database
-		request.onsuccess=function(event)  {
-			console.log("log "+log.id+" updated");
-			populateList();
-		};
-		request.onerror = function(event) {console.log("error updating log "+log.id);};
-	}
-});
-
-// CANCEL NEW/EDIT LOG
-id('buttonCancelLog').addEventListener('click', function() {
-    toggleDialog('logDialog',false); // close add new jotting dialog
-});
-  
-// DELETE LOG
-id('buttonDeleteLog').addEventListener('click', function() {
-	var text=log.text; // initiate delete log
-	console.log("delete log "+text);
-	toggleDialog("deleteDialog", true);
-	id('deleteText').innerHTML=text;
-	toggleDialog("logDialog", false);
-});
-
-// CONFIRM DELETE
-id('buttonDeleteConfirm').addEventListener('click', function() {
-	console.log("delete log "+logIndex+" - "+log.text); // confirm delete log
-	var dbTransaction=db.transaction("logs","readwrite");
-	console.log("indexedDB transaction ready");
-	var dbObjectStore=dbTransaction.objectStore("logs");
-	var request=dbObjectStore.delete(log.id);
-	request.onsuccess=function(event) {
-		console.log("log "+log.id+" deleted");
-		logs.splice(logIndex,1); // not needed - rebuilding logs anyway
-		populateList();
-	};
-	request.onerror=function(event) {console.log("error deleting log "+log.id);};
-	toggleDialog('deleteDialog', false);
-});
-
-// CANCEL DELETE
-id('buttonCancelDelete').addEventListener('click', function() {
-    toggleDialog('deleteDialog', false); // close delete dialog
-});
-
-// SHOW/HIDE DIALOGS
-function  toggleDialog(d, visible) {
-    console.log('toggle '+d+' - '+visible);
-  	id('buttonNew').style.display=(visible)?'none':'block';
-	if(d=='logDialog') { // toggle log dialog
-	    if (visible) {
-      		id("logDialog").style.display='block';
-    	} else {
-      		id("logDialog").style.display='none';
-    	}
-	}
-	else if(d=='deleteDialog') { // toggle DELETE dialog
-	  	if(visible) {
-      		id('deleteDialog').style.display='block';
-   		} else {
-     		id('deleteDialog').style.display='none';
-    	}
-	}
-	else if(d=='importDialog') { // toggle file chooser dialog
-	  	if(visible) {
-      		id('importDialog').style.display='block';
-    	} else {
-      		id('importDialog').style.display='none';
-    	}
-	}
+    populateList();
 }
 
-// OPEN SELECTED LOG FOR EDITING
-function openLog() {
-	console.log("open log: "+logIndex);
-	log=logs[logIndex];
-	toggleDialog('logDialog',true);
-	id('logDate').value=log.date;
-	id('logMiles').value=log.miles;
-	id('logStartCharge').value=log.startCharge;
-	id('logEndCharge').value=log.endCharge;
-	id('buttonDeleteLog').disabled=false;
-	id('buttonDeleteLog').style.color='red';
+// SAVE CHANGED LOG
+id('buttonSaveLog').addEventListener('click',function() {
+	charge={};
+	charge.date=id('logDate').value;
+	charge.miles=parseInt(id('logMiles').value);
+	charge.startCharge=parseInt(id('logStartCharge').value);
+	charge.endCharge=parseInt(id('logEndCharge').value);
+	console.log('update charge log '+logIndex+': '+charge.date+'; '+charge.miles+'; '+charge.startCharge+'-'+charge.endCharge);
+	charges[logIndex]=charge;
+	var chargeData=JSON.stringify(charges);
+	window.localStorage.setItem('chargeData',chargeData); 
+    toggleDialog('logDialog',false);
+    populateList();
+})
+
+// DELETE LOG
+id('buttonDeleteLog').addEventListener('click', function() {
+	console.log('delete charge log '+logIndex);
+	charges.splice(logIndex,1);
+	var chargeData=JSON.stringify(charges);
+	window.localStorage.setItem('chargeData',chargeData);
+	/*
+	var text=log.text; // initiate delete log
+	console.log("delete log "+text);
+	toggleDialog(" ", true);
+	id('deleteText').innerHTML=text;
+	*/
+	toggleDialog("logDialog", false);
+	populateList();
+});
+
+// DISPLAY MESSAGE
+function display(message) {
+	id('messageDialog').innerHTML=message;
+	toggleDialog('messageDialog',true);
+}
+// SHOW/HIDE DIALOGS
+function  toggleDialog(d, visible) {
+	if(currentDialog) id(currentDialog).style.display='none';
+	if(visible) currentDialog=d;
+	else currentDialog=null;
+    console.log('toggle '+d+' - '+visible);
+  	id('buttonNew').style.display=(visible)?'none':'block';
+  	id(d).style.display=(visible)?'block':'none';
+}
+
+// OPEN SELECTED LOG
+function openLog(month) {
+	console.log('open log '+logIndex+' month is '+month);
+	if(month) {
+		console.log('open month log '+logIndex);
+		log=logs[logIndex];
+		var mon=parseInt(log.date.substr(5,2))-1;
+		var html=months.substr(mon*3,3)+" "+log.date.substr(0,4);
+		var val=capacity*log.percent/100;
+		val=Math.round(val);
+		html+=': '+log.miles+' miles using '+val+'kWh ('+log.percent+'% charge)<br>@ ';
+		val=log.miles/val;
+		val*=10;
+		val=Math.round(val);
+		val/=10;
+		html+=val+' mi/kWh (';
+		val=log.miles/log.percent;
+		val*=10;
+		val=Math.round(val);
+		val/=10;
+		html+=val+' mi/% charge)';
+		display(html);
+		toggleDialog('messageDialog',true);
+	}
+	else {
+		console.log("open charge log: "+logIndex);
+		log=charges[logIndex];
+		toggleDialog('logDialog',true);
+		id('logDate').value=log.date;
+		id('logMiles').value=log.miles;
+		id('logStartCharge').value=log.startCharge;
+		id('logEndCharge').value=log.endCharge;
+		id('buttonDeleteLog').style.display='block';
+		id('buttonDeleteLog').style.color='red';
+		id('buttonAddLog').style.display='none';
+		id('buttonSaveLog').style.display='block';
+	}
 }
   
 // POPULATE LOGS LIST
@@ -145,9 +195,7 @@ function populateList() {
 	console.log("populate log list");
 	logs=[];
 	var dbTransaction=db.transaction('logs',"readwrite");
-	console.log("indexedDB transaction ready");
 	var dbObjectStore=dbTransaction.objectStore('logs');
-	console.log("indexedDB objectStore ready");
 	var request=dbObjectStore.openCursor();
 	request.onsuccess=function(event) {  
 		var cursor=event.target.result;  
@@ -161,129 +209,133 @@ function populateList() {
 			total.percent=0;
 			total.charge=0;
 			console.log("list "+logs.length+" logs");
-			logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
-			console.log("populate list");
+			logs.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)}); // date order
+			console.log("list "+logs.length+" month logs");
 			id('list').innerHTML=""; // clear list
 			var html="";
 			var d="";
 			var mon=0;
-			var ppm=0; // percentage charge per mile
+			var mpp=0; // miles per percentage charge
 			var mpk=0; // miles per kWh
-  			for(var i=0; i<logs.length; i++) { // list latest first
+  			for(var i=0; i<logs.length; i++) { // list month logs first
   			 	var listItem=document.createElement('li');
 				listItem.index=i;
 	 		 	listItem.classList.add('log-item');
-				listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
-				// listItem.addEventListener('click', openLog);
-				var itemText=document.createElement('span');
+				listItem.addEventListener('click', function(){logIndex=this.index; openLog(true);});
+				// var itemText=document.createElement('span');
 				d=logs[i].date;
 				mon=parseInt(d.substr(5,2))-1;
 				mon*=3;
-				if(d.substr(8,2)=='00') html=months.substr(mon,3)+" "+d.substr(2,2); // month logs
-				else d=d.substr(8,2)+' '+months.substr(mon,3)+" "+d.substr(2,2);
-				if(logs[i].percent==null) html=d+' '+logs[i].miles+'miles '+logs[i].startCharge+'-'+logs[i].endCharge+'%';
+				html=months.substr(mon,3)+" "+d.substr(0,4); // month logs date is Mon YYYY
+				console.log('month log '+i+' so far: '+html);
+				/* html+=' '+logs[i].miles+'miles '+logs[i].percent+'%';
 				// itemText.innerText=html;
 				listItem.appendChild(itemText);
 				var itemRate=document.createElement('span');
 				itemRate.classList.add('right');
-				if(logs[i].percent) { // month logs
-					total.miles+=logs[i].miles;
-					total.percent+=logs[i].percent;
-					total.charge+=capacity*logs[i].percent/100;
-					mpk=logs[i].miles/(capacity*logs[i].percent/100);
-					mpk=Math.floor(mpk*10)/10;
-					itemText.innerText=html+': '+mpk+' mi/kWh';
-					// itemRate.innerText=mpk+' mi/kWh';
-					listItem.style.width=scr.w*mpk/7+'px';
-					console.log('screen: '+scr.w+'px; mpk: '+mpk);
-				}
-				else if(i>0) { // current month's logs
-					itemText.innerText=html;
-					/*
-					total.miles+=(logs[i].miles-logs[i-1].miles);
-					total.charge+=(logs[i-1].endCharge-logs[i].startCharge);
-					*/
-					ppm=(logs[i-1].endCharge-logs[i].startCharge)/(logs[i].miles-logs[i-1].miles);
-					ppm*=10;
-					ppm=Math.round(ppm);
-					ppm/=10; // one decimal place
-					itemRate.innerText=ppm;
-					if(ppm%1==0) itemRate.innerText+='.0';
-					itemRate.innerText+='%/mi';
-					/*
-					var miles=logs[i].miles-logs[i-1].miles; // miles driven between charges
-					total.mile+=miles;
-					var kwh=(logs[i-1].endCharge-logs[i].startCharge)*17.6/100; // kWh consumed between charges
-					total.kwh+=kwh;
-					miles/=kwh; // energy consumption: miles/kWh
-					miles*=10;
-					miles=Math.round(miles);
-					miles*=10; // nearest decimal point
-					itemRate.innerText=miles+'mi/kWh';
-					*/
-				}
-				listItem.appendChild(itemRate);
-				/*
-				if(logs[i].charge) html+="CHARGE to... "+logs[i].percent+'%';
-				else html+=logs[i].destination; // +" "+logs[i].distance+"mi ";
-				itemText.innerText=html;
-				listItem.appendChild(itemText);
-				if(!logs[i].charge) {
-					var itemRate=document.createElement('span');
-					itemRate.classList.add('right');
-					var n=(logs[i-1].percent-logs[i].percent);
-					console.log(n+'% used');
-					n/=logs[i].distance;
-					n*=10;
-					n=Math.floor(n);
-					if(n%10==0) n=n/10+'.0';
-					else n/=10;
-					itemRate.innerText=n+'%/mi';
-					listItem.appendChild(itemRate);
-					// html+=n+"%/mi <img src='"+logs[i].extra*4+"button24px.svg'";
-					var itemPercent=document.createElement('span');
-					itemPercent.classList.add('right');
-					itemPercent.innerText=logs[i].percent+'%';
-					listItem.appendChild(itemPercent);
-					var itemDist=document.createElement('span');
-					itemDist.classList.add('right');
-					itemDist.innerHTML=logs[i].distance+'mi <img src="'+logs[i].extra*4+'button24px.svg"/>';
-					listItem.appendChild(itemDist);
-				}
 				*/
-		  		id('list').appendChild(listItem);
+				total.miles+=logs[i].miles;
+				total.percent+=logs[i].percent;
+				// total.charge+=capacity*logs[i].percent/100;
+				mpk=logs[i].miles/(capacity*logs[i].percent/100);
+				mpk=Math.floor(mpk*10)/10;
+				listItem.innerText=html+': '+mpk+' mi/kWh';
+				listItem.style.width=scr.w*mpk/7+'px';
+				console.log('screen: '+scr.w+'px; mpk: '+mpk);
+				id('list').appendChild(listItem);
+			}
+			console.log('list '+charges.length+' charges');
+  			for( i in charges) { // list this month's charges after month logs
+  			var listItem=document.createElement('li');
+				listItem.index=i;
+	 		 	listItem.classList.add('log-item');
+				listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
+				var itemText=document.createElement('span');
+				console.log('charge log '+i+' date:'+charges[i].date+' miles:'+charges[i].miles+' from '+charges[i].startCharge+' to '+charges[i].endCharge);
+  				d=charges[i].date
+				mon=parseInt(d.substr(5,2))-1;
+				mon*=3;
+				html=months.substr(mon,3)+' '+d.substr(8,2); // date is Mon DD
+  				html+=' '+charges[i].miles+' miles '+charges[i].startCharge+'-'+charges[i].endCharge+'%';
+  				if(i>0) {
+  					mpp=(charges[i].miles-charges[i-1].miles)/(charges[i-1].endCharge-charges[i-1].startCharge);
+  					mpp*=10;
+  					mpp=Math.round(mpp);
+  					mpp/=10;
+  				}
+  				else mpp=1;
+  				listItem.innerText=html+' '+mpp+'mi/%';
+  				// listItem.style.width=scr.w*mpp/1+'px';
+  				listItem.style.width=scr.w+'px';
+  				if(i>0) total.miles+=(charges[i].miles-charges[i-1].miles);
+  				total.percent+=(charges[i].startCharge-charges[i].endCharge);
+  				// total.charge+=capacity*total.percent/100;
+				id('list').appendChild(listItem);
   			}
-  			console.log('totals: '+total.miles+' miles; '+total.charge+' kWh; '+total.percent+' %/mi');
-  			ppm=total.percent/total.miles;
-  			ppm*=10;
-  			ppm=Math.round(ppm);
-  			ppm/=10;
+  			total.charge=capacity*total.percent/100;
+  			total.charge=Math.round(total.charge);
+  			console.log('totals: '+total.miles+' miles; '+total.charge+' kWh; '+total.percent+' %');
+  			mpp=total.miles/total.percent;
+  			mpp*=10;
+  			mpp=Math.round(mpp);
+  			mpp/=10;
   			mpk=total.miles/total.charge;
 			mpk*=10;
 			mpk=Math.round(mpk);
 			mpk/=10; // one decimal place
-			id('heading').innerText=mpk+' miles/kWh; '+ppm+' %/mile';
-	        var thisMonth=new Date().getMonth();
-	        if(thisMonth!=lastSave) backup(); // monthly backups
-	        // drawGraph();
-  		}
+			id('heading').innerText=mpk+' miles/kWh; '+mpp+' miles/%';
+		}
+		var thisMonth=new Date().getMonth();
+		if(thisMonth!=lastSave) backup(); // monthly backups
 	}
 	request.onerror=function(event) {
 		console.log("cursor request failed");
 	}
 }
 
-function selectLog() {
-	if(currentLog) currentLog.children[0].style.backgroundColor='gray'; // deselect any previously selected item
-    itemIndex=parseInt(logIndex);
-	log=logs[logIndex];
-	console.log("selected item: "+logIndex);
-	currentLog=id('list').children[logIndex];
-	// currentLog.children[0].style.backgroundColor='black'; // highlight new selection
-	currentLog.style.backgroundColor='black'; // highlight new selection
+// IMPORT/BACKUP
+id('backupButton').addEventListener('click',backup);
+function backup() {
+  	console.log("save backup");
+	var fileName="trouve.json";
+	var dbTransaction=db.transaction('logs',"readwrite");
+	console.log("indexedDB transaction ready");
+	var dbObjectStore=dbTransaction.objectStore('logs');
+	console.log("indexedDB objectStore ready");
+	var logs=[];
+	var request=dbObjectStore.openCursor();
+	request.onsuccess = function(event) {  
+		var cursor=event.target.result;  
+    	if(cursor) {
+		    logs.push(cursor.value);
+			console.log("log "+cursor.value.id+", date: "+cursor.value.date);
+			cursor.continue();  
+    	}
+		else {
+			console.log(logs.length+" logs - sort and save");
+    		logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); //chronological order
+			var data={'logs': logs, 'charges':charges};
+			var json=JSON.stringify(data);
+			var blob=new Blob([json],{type:"data:application/json"});
+  			var a=document.createElement('a');
+			a.style.display='none';
+    		var url=window.URL.createObjectURL(blob);
+			console.log("data ready to save: "+blob.size+" bytes");
+   			a.href=url;
+   			a.download=fileName;
+    		document.body.appendChild(a);
+    		a.click();
+			alert(fileName+" saved to downloads folder");
+			var today=new Date();
+			lastSave=today.getMonth();
+			window.localStorage.setItem('trouveSave',lastSave); // remember month of backup
+		}
+	}
+	request.onerror=function(event) {alert('backup failed');}
 }
-  
-// IMPORT FILE
+id('importButton').addEventListener('click',function() {
+	toggleDialog('importDialog',true);
+});
 id("fileChooser").addEventListener('change',function() {
     var file=id('fileChooser').files[0];
     console.log("file: "+file+" name: "+file.name);
@@ -305,63 +357,25 @@ id("fileChooser").addEventListener('change',function() {
     		};
     		request.onerror = function(e) {console.log("error adding log");};
     	}
+    	charges=json.charges;
     	toggleDialog('importDialog',false);
     	alert("logs imported - restart");
     });
     fileReader.readAsText(file);
 });
-  
-// CANCEL IMPORT DATA
-id('buttonCancelImport').addEventListener('click',function() {
-    console.log('cancel import');
-    toggleDialog('importDialog', false);
-});
-
-// BACKUP
-function backup() {
-  	console.log("save backup");
-	var fileName="trouve.json";
-	var dbTransaction=db.transaction('logs',"readwrite");
-	console.log("indexedDB transaction ready");
-	var dbObjectStore=dbTransaction.objectStore('logs');
-	console.log("indexedDB objectStore ready");
-	var logs=[];
-	var request=dbObjectStore.openCursor();
-	request.onsuccess = function(event) {  
-		var cursor=event.target.result;  
-    	if(cursor) {
-		    logs.push(cursor.value);
-			console.log("log "+cursor.value.id+", date: "+cursor.value.date);
-			cursor.continue();  
-    	}
-		else {
-			console.log(logs.length+" logs - sort and save");
-    		logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); //chronological order
-			var data={'logs': logs};
-			var json=JSON.stringify(data);
-			var blob=new Blob([json],{type:"data:application/json"});
-  			var a=document.createElement('a');
-			a.style.display='none';
-    		var url=window.URL.createObjectURL(blob);
-			console.log("data ready to save: "+blob.size+" bytes");
-   			a.href=url;
-   			a.download=fileName;
-    		document.body.appendChild(a);
-    		a.click();
-			alert(fileName+" saved to downloads folder");
-			var today=new Date();
-			lastSave=today.getMonth();
-			window.localStorage.setItem('trouveSave',lastSave); // remember month of backup
-		}
-	}
-}
 
 // START-UP CODE
 scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
 lastSave=window.localStorage.getItem('trouveSave'); // get month of last backup
-console.log('lastSave: '+lastSave);
+thisMonth=window.localStorage.getItem('thisMonth'); // get month of latest charges
+chargeData=window.localStorage.getItem('chargeData');
+if(chargeData) {
+	charges=JSON.parse(chargeData); // restore saved charges
+	console.log(charges.length+' charges restored');
+}
+console.log('lastSave: '+lastSave+'; thisMonth: '+thisMonth);
 var request=window.indexedDB.open("trouveDB");
 request.onsuccess=function(event) {
     db=event.target.result;
@@ -388,7 +402,6 @@ request.onsuccess=function(event) {
 		        return
 		    }
 		    logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
-		    
 		    /* TEMPORARY CONVERTER
 		    var months=[]; // new array for monthly logs
 		    var month=0; // latest month

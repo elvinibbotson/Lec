@@ -12,15 +12,18 @@
 <header class="header">
     <div id="heading"></div>
 </header>
+<div id='main'>
 <div id="listPanel"><ul id="list" class="logList"></ul></div>
 <div id='buttonNew' class='action-button'><img src='newButton24px.svg'/></div>
+<div id='messageDialog' class='dialog'></div>
+<div id='dataDialog' class='dialog'>
+	<button id='backupButton' class='text-button'>BACKUP</button>
+	<button id='importButton' class='text-button'>IMPORT</button>
+</div>
 <div id="importDialog" class="dialog">
 	<div class="dialog-title">Load from saved file</div>
 	<input type="file" id="fileChooser">
 	<div class="dialog-body">Imported data will replace any records you already have.</div>
-    <div class="dialog-buttons">
-		<button id="buttonCancelImport" class="cancel-button"></button>
-	</div>
 </div>
 <div id="logDialog" class="dialog">
     <div class="dialog-body">date <input type="date" id="logDate"/>
@@ -29,17 +32,10 @@
     <div class="dialog-body">charge from <input type='number' id='logStartCharge' min='0' max='99'/> to <input type='number' id='logEndCharge' min='0' max='99'/>%</div>
     <div class="dialog-buttons">
 	    <button id="buttonDeleteLog" class="delete-button"></button>
-	  	<button id="buttonCancelLog" class="cancel-button"></button>
+	  	<button id="buttonAddLog" class="add-button"></button>
       	<button id="buttonSaveLog" class="save-button"></button>  
     </div>
 </div>
-<div id="deleteDialog" class="dialog">
-	<div class="dialog-title">Delete</div>
-	<div  id="deleteText" class="dialog-body">text</div>
-	<div class="dialog-buttons">
-        <button id="buttonDeleteConfirm" class="delete-button"></button>
-       	<button id="buttonCancelDelete" class="cancel-button"></button>
-	</div>
 </div>
 <script src="trouveApp.js" async></script>
 </body>
