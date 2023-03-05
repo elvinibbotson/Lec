@@ -55,7 +55,7 @@ id('buttonNew').addEventListener('click', function() { // show the log dialog
 // ADD NEW CHARGE LOG
 id('buttonAddLog').addEventListener('click', function() {
 	var month=parseInt(id('logDate').value.substr(5,2));
-	console.log('thisMonth: '+thisMonth+'; month: '+month);
+	console.log('thisMonth: '+thisMonth+'; month: '+month+' '+charges.length+' charges');
 	if(thisMonth===null) {
 		thisMonth=month;
 		window.localStorage.setItem('thisMonth',month);
@@ -67,29 +67,31 @@ id('buttonAddLog').addEventListener('click', function() {
 		return;
 	}
 	*/
-	else if(month==thisMonth) addChargeLog();
-	else { // first entry for another month
-		console.log('another month - create new month log');
-		log={}; // create new month log from last month's charges
-		log.date=charges[0].date.substr(0,8)+'00'; // null day for month logs
-		log.miles=parseInt(id('logMiles').value)-charges[0].miles; // total miles for month
-		log.percent=0; // tot up percent charge for month
-		for(var i in charges) log.percent+=(charges[i].endCharge-charges[i].startCharge);
-		console.log('new log: '+log.date+' '+log.miles+' miles '+log.percent+'%');
-		var dbTransaction=db.transaction('logs',"readwrite");
-		var dbObjectStore=dbTransaction.objectStore('logs');
-		var addRequest=dbObjectStore.add(log);
-		addRequest.onsuccess=function(event) {
-			charges=[]; // clear charges array
-			console.log('month log saved');
-			addChargeLog();
-		}
-		addRequest.onerror=function(event) {console.log('error adding month '+i);}
+	else if(month!=thisMonth) { // first entry for another month
+		thisMonth=month;
 		window.localStorage.setItem('thisMonth',month);
-		console.log('saved thisMonth: '+month);
+		if(charges.length>0) { // make new month log from previous month's charges
+			console.log('another month - create new month log');
+			log={}; // create new month log from last month's charges
+			log.date=charges[0].date.substr(0,8)+'00'; // null day for month logs
+			log.miles=parseInt(id('logMiles').value)-charges[0].miles; // total miles for month
+			log.percent=0; // tot up percent charge for month
+			for(var i in charges) log.percent+=(charges[i].endCharge-charges[i].startCharge);
+			console.log('new log: '+log.date+' '+log.miles+' miles '+log.percent+'%');
+			var dbTransaction=db.transaction('logs',"readwrite");
+			var dbObjectStore=dbTransaction.objectStore('logs');
+			var addRequest=dbObjectStore.add(log);
+			addRequest.onsuccess=function(event) {
+				charges=[]; // clear charges array
+				console.log('month log saved');
+				addChargeLog();
+			}
+			addRequest.onerror=function(event) {console.log('error adding month '+i);}
+			console.log('saved thisMonth: '+month);
+		}
+		else addChargeLog(); 
 	}
-	
-    // for(var i in charges) console.log('charge '+i+': '+charges[i].date+'; '+charges[i].miles+'; '+(charges[i].endCharge-charges[i].startCharge));
+	else addChargeLog();
 });
 function addChargeLog() {
 	charge={};
@@ -104,7 +106,6 @@ function addChargeLog() {
     toggleDialog('logDialog',false);
     populateList();
 }
-
 // SAVE CHANGED LOG
 id('buttonSaveLog').addEventListener('click',function() {
 	charge={};
@@ -119,7 +120,6 @@ id('buttonSaveLog').addEventListener('click',function() {
     toggleDialog('logDialog',false);
     populateList();
 })
-
 // DELETE LOG
 id('buttonDeleteLog').addEventListener('click', function() {
 	console.log('delete charge log '+logIndex);
@@ -135,7 +135,6 @@ id('buttonDeleteLog').addEventListener('click', function() {
 	toggleDialog("logDialog", false);
 	populateList();
 });
-
 // DISPLAY MESSAGE
 function display(message) {
 	id('messageDialog').innerHTML=message;
@@ -150,7 +149,6 @@ function  toggleDialog(d, visible) {
   	id('buttonNew').style.display=(visible)?'none':'block';
   	id(d).style.display=(visible)?'block':'none';
 }
-
 // OPEN SELECTED LOG
 function openLog(month) {
 	console.log('open log '+logIndex+' month is '+month);
@@ -189,7 +187,6 @@ function openLog(month) {
 		id('buttonSaveLog').style.display='block';
 	}
 }
-  
 // POPULATE LOGS LIST
 function populateList() {
 	console.log("populate log list");
@@ -208,7 +205,6 @@ function populateList() {
 			total.miles=0;
 			total.percent=0;
 			total.charge=0;
-			console.log("list "+logs.length+" logs");
 			logs.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)}); // date order
 			console.log("list "+logs.length+" month logs");
 			id('list').innerHTML=""; // clear list
@@ -227,7 +223,7 @@ function populateList() {
 				mon=parseInt(d.substr(5,2))-1;
 				mon*=3;
 				html=months.substr(mon,3)+" "+d.substr(0,4); // month logs date is Mon YYYY
-				console.log('month log '+i+' so far: '+html);
+				// console.log('month log '+i+' so far: '+html);
 				/* html+=' '+logs[i].miles+'miles '+logs[i].percent+'%';
 				// itemText.innerText=html;
 				listItem.appendChild(itemText);
@@ -241,7 +237,6 @@ function populateList() {
 				mpk=Math.floor(mpk*10)/10;
 				listItem.innerText=html+': '+mpk+' mi/kWh';
 				listItem.style.width=scr.w*mpk/7+'px';
-				console.log('screen: '+scr.w+'px; mpk: '+mpk);
 				id('list').appendChild(listItem);
 			}
 			console.log('list '+charges.length+' charges');
@@ -292,7 +287,6 @@ function populateList() {
 		console.log("cursor request failed");
 	}
 }
-
 // IMPORT/BACKUP
 id('backupButton').addEventListener('click',backup);
 function backup() {
@@ -349,6 +343,8 @@ id("fileChooser").addEventListener('change',function() {
     	console.log(logs.length+" logs loaded");
     	var dbTransaction=db.transaction('logs',"readwrite");
     	var dbObjectStore=dbTransaction.objectStore('logs');
+    	var clearRequest=dbObjectStore.clear();
+    	clearRequest.onsuccess=function(event) {console.log('logs data deleted');}
     	for(var i=0;i<logs.length;i++) {
     		console.log("add log "+i);
     		var request = dbObjectStore.add(logs[i]);
@@ -363,7 +359,6 @@ id("fileChooser").addEventListener('change',function() {
     });
     fileReader.readAsText(file);
 });
-
 // START-UP CODE
 scr.w=screen.width;
 scr.h=screen.height;
