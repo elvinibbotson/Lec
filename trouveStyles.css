@@ -121,12 +121,19 @@ li {
 	margin: 20px;
 }
 
-.add-button, .save-button {
+.add-button {
 	width: 50px;
 	height: 24px;
 	border: none;
     float: right;
     background: url(newButton24px.svg) center center no-repeat;
+}
+.save-button {
+	width: 50px;
+	height: 24px;
+	border: none;
+    float: right;
+    background: url(okButton24px.svg) center center no-repeat;
 }
 .delete-button {
     float: left;
