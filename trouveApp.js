@@ -60,13 +60,6 @@ id('buttonAddLog').addEventListener('click', function() {
 		thisMonth=month;
 		window.localStorage.setItem('thisMonth',month);
 	}
-	/*
-	else if(month!=this.month) {
-		alert('too early!');
-		toggleDialog('logDialog',false);
-		return;
-	}
-	*/
 	else if(month!=thisMonth) { // first entry for another month
 		thisMonth=month;
 		window.localStorage.setItem('thisMonth',month);
@@ -279,9 +272,12 @@ function populateList() {
 			mpk=Math.round(mpk);
 			mpk/=10; // one decimal place
 			id('heading').innerText=mpk+' miles/kWh; '+mpp+' miles/%';
+			// TRY IT HERE
+			console.log('check need to backup');
+			var thisMonth=new Date().getMonth();
+			if(thisMonth!=lastSave) backup(); // monthly backups
 		}
-		var thisMonth=new Date().getMonth();
-		if(thisMonth!=lastSave) backup(); // monthly backups
+		
 	}
 	request.onerror=function(event) {
 		console.log("cursor request failed");
@@ -291,8 +287,14 @@ function populateList() {
 id('backupButton').addEventListener('click',backup);
 function backup() {
   	console.log("save backup");
-	var fileName="trouve.json";
-	var dbTransaction=db.transaction('logs',"readwrite");
+	var fileName="trouve";
+	var date=new Date();
+	fileName+=date.getFullYear();
+	if(date.getMonth()<9) fileName+='0'; // date format YYYYMMDD
+	fileName+=(date.getMonth()+1);
+	if(date.getDate()<10) fileName+='0';
+	fileName+=date.getDate()+".json";
+ 	var dbTransaction=db.transaction('logs',"readwrite");
 	console.log("indexedDB transaction ready");
 	var dbObjectStore=dbTransaction.objectStore('logs');
 	console.log("indexedDB objectStore ready");
@@ -319,10 +321,10 @@ function backup() {
    			a.download=fileName;
     		document.body.appendChild(a);
     		a.click();
-			alert(fileName+" saved to downloads folder");
 			var today=new Date();
 			lastSave=today.getMonth();
 			window.localStorage.setItem('trouveSave',lastSave); // remember month of backup
+			display(fileName+" saved to downloads folder");
 		}
 	}
 	request.onerror=function(event) {alert('backup failed');}
@@ -355,7 +357,7 @@ id("fileChooser").addEventListener('change',function() {
     	}
     	charges=json.charges;
     	toggleDialog('importDialog',false);
-    	alert("logs imported - restart");
+    	display("logs imported - restart");
     });
     fileReader.readAsText(file);
 });
