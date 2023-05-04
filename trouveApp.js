@@ -246,7 +246,7 @@ function populateList() {
 				html=months.substr(mon,3)+' '+d.substr(8,2); // date is Mon DD
   				html+=' '+charges[i].miles+' miles '+charges[i].startCharge+'-'+charges[i].endCharge+'%';
   				if(i>0) {
-  					mpp=(charges[i].miles-charges[i-1].miles)/(charges[i-1].endCharge-charges[i-1].startCharge);
+  					mpp=(charges[i].miles-charges[i-1].miles)/(charges[i-1].endCharge-charges[i].startCharge);
   					mpp*=10;
   					mpp=Math.round(mpp);
   					mpp/=10;
