@@ -19,7 +19,7 @@ var startX;
 var lastSave=-1;
 var thisMonth=0;
 var months="JanFebMarAprMayJunJulAugSepOctNovDec";
-var capacity=17.6; // usable battery capacity (kWh)
+var capacity=48; // usable battery capacity (kWh) for Peugeot e-208
 
 // EVENT LISTENERS
 id('main').addEventListener('touchstart', function(event) {
@@ -252,13 +252,9 @@ function populateList() {
   					mpp/=10;
   					listItem.innerText+=mpp+'mi/%';
   				}
-  				// else mpp=1;
-  				// listItem.innerText=html+' '+mpp+'mi/%';
-  				// listItem.style.width=scr.w*mpp/1+'px';
   				listItem.style.width=scr.w+'px';
   				if(i>0) total.miles+=(charges[i].miles-charges[i-1].miles);
   				total.percent+=(charges[i].startCharge-charges[i].endCharge);
-  				// total.charge+=capacity*total.percent/100;
 				id('list').appendChild(listItem);
   			}
   			total.charge=capacity*total.percent/100;
