@@ -204,7 +204,7 @@ function populateList() {
 			var html="";
 			var d="";
 			var mon=0;
-			var mpp=0; // miles per percentage charge
+			// var mpp=0; // miles per percentage charge
 			var mpk=0; // miles per kWh
   			for(var i=0; i<logs.length; i++) { // list month logs first
   			 	var listItem=document.createElement('li');
@@ -228,7 +228,7 @@ function populateList() {
 				// total.charge+=capacity*logs[i].percent/100;
 				mpk=logs[i].miles/(capacity*logs[i].percent/100);
 				mpk=Math.floor(mpk*10)/10;
-				listItem.innerText=html+': '+mpk+' mi/kWh';
+				listItem.innerText=html+': '+logs[i].miles+'mi '+mpk+' mi/kWh';
 				listItem.style.width=scr.w*mpk/7+'px';
 				id('list').appendChild(listItem);
 			}
@@ -244,13 +244,13 @@ function populateList() {
 				mon=parseInt(d.substr(5,2))-1;
 				mon*=3;
 				html=months.substr(mon,3)+' '+d.substr(8,2); // date is Mon DD
-  				listItem.innerText+=' '+charges[i].miles+' miles '+charges[i].startCharge+'-'+charges[i].endCharge+'% ';
+  				listItem.innerText=html+' '+charges[i].miles+' miles '+charges[i].startCharge+'-'+charges[i].endCharge+'% ';
   				if(i>0) {
-  					mpp=(charges[i].miles-charges[i-1].miles)/(charges[i-1].endCharge-charges[i].startCharge);
-  					mpp*=10;
-  					mpp=Math.round(mpp);
-  					mpp/=10;
-  					listItem.innerText+=mpp+'mi/%';
+  					mpk=(charges[i].miles-charges[i-1].miles)/(capacity*(charges[i-1].endCharge-charges[i].startCharge)/100);
+  					mpk*=10;
+  					mpk=Math.round(mpk);
+  					mpk/=10;
+  					listItem.innerText+=mpk+'mi/kWh';
   				}
   				listItem.style.width=scr.w+'px';
   				if(i>0) total.miles+=(charges[i].miles-charges[i-1].miles);
@@ -260,15 +260,17 @@ function populateList() {
   			total.charge=capacity*total.percent/100;
   			total.charge=Math.round(total.charge);
   			console.log('totals: '+total.miles+' miles; '+total.charge+' kWh; '+total.percent+' %');
+  			/*
   			mpp=total.miles/total.percent;
   			mpp*=10;
   			mpp=Math.round(mpp);
   			mpp/=10;
+  			*/
   			mpk=total.miles/total.charge;
 			mpk*=10;
 			mpk=Math.round(mpk);
 			mpk/=10; // one decimal place
-			id('heading').innerText=mpk+' miles/kWh; '+mpp+' miles/%';
+			id('heading').innerText=mpk+' miles/kWh';
 			// TRY IT HERE
 			console.log('check need to backup');
 			var thisMonth=new Date().getMonth();
