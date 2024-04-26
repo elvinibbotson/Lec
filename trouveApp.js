@@ -32,10 +32,8 @@ id('main').addEventListener('touchend', function(event) {
     	if(currentDialog) toggleDialog(currentDialog,false); // close an open dialog
     }
 })
-
 // TAP HEADER - DATA MENU
 id('heading').addEventListener('click',function() {toggleDialog('dataDialog',true);})
-
 // NEW BUTTON
 id('buttonNew').addEventListener('click', function() { // show the log dialog
 	console.log("show add jotting dialog with today's date, 1 day duration, blank text field and delete button disabled");
@@ -51,7 +49,6 @@ id('buttonNew').addEventListener('click', function() { // show the log dialog
 	id('buttonSaveLog').style.display='none';
 	toggleDialog('logDialog',true);
 });
-
 // ADD NEW CHARGE LOG
 id('buttonAddLog').addEventListener('click', function() {
 	var month=parseInt(id('logDate').value.substr(5,2));
@@ -197,14 +194,12 @@ function populateList() {
 			var total={};
 			total.miles=0;
 			total.percent=0;
-			total.charge=0;
 			logs.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)}); // date order
 			console.log("list "+logs.length+" month logs");
 			id('list').innerHTML=""; // clear list
 			var html="";
 			var d="";
 			var mon=0;
-			// var mpp=0; // miles per percentage charge
 			var mpk=0; // miles per kWh
   			for(var i=0; i<logs.length; i++) { // list month logs first
   			 	var listItem=document.createElement('li');
@@ -225,14 +220,19 @@ function populateList() {
 				*/
 				total.miles+=logs[i].miles;
 				total.percent+=logs[i].percent;
-				// total.charge+=capacity*logs[i].percent/100;
 				mpk=logs[i].miles/(capacity*logs[i].percent/100);
 				mpk=Math.floor(mpk*10)/10;
 				listItem.innerText=html+': '+logs[i].miles+'mi '+mpk+' mi/kWh';
-				listItem.style.width=scr.w*mpk/7+'px';
+				listItem.style.width=scr.w*mpk/5+'px';
 				id('list').appendChild(listItem);
 			}
 			console.log('list '+charges.length+' charges');
+			d=charges[i].date
+			mon=parseInt(d.substr(5,2))-1;
+			mon*=3;
+			listItem=document.createElement('li');
+			listItem.innerText=months.substr(mon,3);
+			id('list').appendChild(listItem);
   			for( i in charges) { // list this month's charges after month logs
   			var listItem=document.createElement('li');
 				listItem.index=i;
@@ -240,37 +240,34 @@ function populateList() {
 				listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
 				var itemText=document.createElement('span');
 				console.log('charge log '+i+' date:'+charges[i].date+' miles:'+charges[i].miles+' from '+charges[i].startCharge+' to '+charges[i].endCharge);
-  				d=charges[i].date
+  				d=charges[i].date;
+  				listItem.innerText=d.substr(8,2)+' '+charges[i].startCharge+'-'+charges[i].endCharge+'% '; // add charge percents
+  				/*
 				mon=parseInt(d.substr(5,2))-1;
 				mon*=3;
 				html=months.substr(mon,3)+' '+d.substr(8,2); // date is Mon DD
-  				listItem.innerText=html+' '+charges[i].miles+' miles '+charges[i].startCharge+'-'+charges[i].endCharge+'% ';
+				listItem.innerText=html+' '+charges[i].startCharge+'-'+charges[i].endCharge+'% '; // add charge percents
+				*/
+  				listItem.innerText+='@'+charges[i].miles+'mi: '; // add mileage
   				if(i>0) {
   					mpk=(charges[i].miles-charges[i-1].miles)/(capacity*(charges[i-1].endCharge-charges[i].startCharge)/100);
   					mpk*=10;
   					mpk=Math.round(mpk);
   					mpk/=10;
-  					listItem.innerText+=mpk+'mi/kWh';
+  					// listItem.innerText+=mpk+'mi/kWh'; // add economy
   				}
-  				listItem.style.width=scr.w+'px';
+  				// listItem.style.width=scr.w+'px';
+  				if(i>0) listItem.style.width=scr.w*mpk/5+'px';
   				if(i>0) total.miles+=(charges[i].miles-charges[i-1].miles);
-  				total.percent+=(charges[i].startCharge-charges[i].endCharge);
+  				total.percent+=(charges[i].endCharge-charges[i].startCharge);
 				id('list').appendChild(listItem);
   			}
-  			total.charge=capacity*total.percent/100;
-  			total.charge=Math.round(total.charge);
-  			console.log('totals: '+total.miles+' miles; '+total.charge+' kWh; '+total.percent+' %');
-  			/*
-  			mpp=total.miles/total.percent;
-  			mpp*=10;
-  			mpp=Math.round(mpp);
-  			mpp/=10;
-  			*/
-  			mpk=total.miles/total.charge;
+  			console.log('totals: '+total.miles+' miles; '+total.percent+' %');
+  			mpk=total.miles/(capacity*total.percent/100);
 			mpk*=10;
 			mpk=Math.round(mpk);
 			mpk/=10; // one decimal place
-			id('heading').innerText=mpk+' miles/kWh';
+			id('heading').innerText='Peugeot e208: '+mpk+' miles/kWh';
 			// TRY IT HERE
 			console.log('check need to backup');
 			var thisMonth=new Date().getMonth();
@@ -338,10 +335,13 @@ id("fileChooser").addEventListener('change',function() {
     fileReader.addEventListener('load', function(evt) {
 	    console.log("file read: "+evt.target.result);
     	var data=evt.target.result;
+    	console.log('data... logs: '+data.logs+'; charges: '+data.logs);
     	var json=JSON.parse(data);
     	console.log("json: "+json);
     	var logs=json.logs;
-    	console.log(logs.length+" logs loaded");
+    	var chargeData=json.charges;
+    	console.log(logs.length+" logs "+chargeData.length+" charges loaded");
+    	console.log('import logs: '+logs);
     	var dbTransaction=db.transaction('logs',"readwrite");
     	var dbObjectStore=dbTransaction.objectStore('logs');
     	var clearRequest=dbObjectStore.clear();
@@ -354,7 +354,21 @@ id("fileChooser").addEventListener('change',function() {
     		};
     		request.onerror = function(e) {console.log("error adding log");};
     	}
-    	charges=json.charges;
+    	console.log('import charges: '+charges);
+    	
+    	var charge;
+    	charges=[];
+    	for(i=0;i<chargeData.length;i++) {
+    		console.log('add charge '+i);
+    		charge={};
+    		charge.date=chargeData[i].date;
+    		charge.miles=chargeData[i].miles;
+    		charge.startCharge=chargeData[i].startCharge;
+    		charge.endCharge=chargeData[i].endCharge;
+    		charges.push(charge);
+    	}
+    	chargeData=JSON.stringify(charges);
+    	window.localStorage.setItem('chargeData',chargeData);
     	toggleDialog('importDialog',false);
     	display("logs imported - restart");
     });
@@ -367,11 +381,12 @@ console.log('screen size: '+scr.w+'x'+scr.h+'px');
 lastSave=window.localStorage.getItem('trouveSave'); // get month of last backup
 thisMonth=window.localStorage.getItem('thisMonth'); // get month of latest charges
 chargeData=window.localStorage.getItem('chargeData');
-if(chargeData) {
+console.log('chargeData: '+chargeData);
+if(chargeData && chargeData!='undefined') {
 	charges=JSON.parse(chargeData); // restore saved charges
 	console.log(charges.length+' charges restored');
 }
-console.log('lastSave: '+lastSave+'; thisMonth: '+thisMonth);
+// console.log('lastSave: '+lastSave+'; thisMonth: '+thisMonth);
 var request=window.indexedDB.open("trouveDB");
 request.onsuccess=function(event) {
     db=event.target.result;
