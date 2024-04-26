@@ -206,12 +206,10 @@ function populateList() {
 				listItem.index=i;
 	 		 	listItem.classList.add('log-item');
 				listItem.addEventListener('click', function(){logIndex=this.index; openLog(true);});
-				// var itemText=document.createElement('span');
 				d=logs[i].date;
 				mon=parseInt(d.substr(5,2))-1;
 				mon*=3;
 				html=months.substr(mon,3)+" "+d.substr(0,4); // month logs date is Mon YYYY
-				// console.log('month log '+i+' so far: '+html);
 				/* html+=' '+logs[i].miles+'miles '+logs[i].percent+'%';
 				// itemText.innerText=html;
 				listItem.appendChild(itemText);
@@ -231,7 +229,8 @@ function populateList() {
 			mon=parseInt(d.substr(5,2))-1;
 			mon*=3;
 			listItem=document.createElement('li');
-			listItem.innerText=months.substr(mon,3);
+			listItem.innerText='this month ('+months.substr(mon,3)+')';
+			listItem.style='font-weight:bold';
 			id('list').appendChild(listItem);
   			for( i in charges) { // list this month's charges after month logs
   			var listItem=document.createElement('li');
@@ -242,21 +241,13 @@ function populateList() {
 				console.log('charge log '+i+' date:'+charges[i].date+' miles:'+charges[i].miles+' from '+charges[i].startCharge+' to '+charges[i].endCharge);
   				d=charges[i].date;
   				listItem.innerText=d.substr(8,2)+' '+charges[i].startCharge+'-'+charges[i].endCharge+'% '; // add charge percents
-  				/*
-				mon=parseInt(d.substr(5,2))-1;
-				mon*=3;
-				html=months.substr(mon,3)+' '+d.substr(8,2); // date is Mon DD
-				listItem.innerText=html+' '+charges[i].startCharge+'-'+charges[i].endCharge+'% '; // add charge percents
-				*/
-  				listItem.innerText+='@'+charges[i].miles+'mi: '; // add mileage
+  				listItem.innerText+='@'+charges[i].miles; // add mileage
   				if(i>0) {
   					mpk=(charges[i].miles-charges[i-1].miles)/(capacity*(charges[i-1].endCharge-charges[i].startCharge)/100);
   					mpk*=10;
   					mpk=Math.round(mpk);
   					mpk/=10;
-  					// listItem.innerText+=mpk+'mi/kWh'; // add economy
   				}
-  				// listItem.style.width=scr.w+'px';
   				if(i>0) listItem.style.width=scr.w*mpk/5+'px';
   				if(i>0) total.miles+=(charges[i].miles-charges[i-1].miles);
   				total.percent+=(charges[i].endCharge-charges[i].startCharge);
