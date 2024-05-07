@@ -225,7 +225,7 @@ function populateList() {
 				id('list').appendChild(listItem);
 			}
 			console.log('list '+charges.length+' charges');
-			d=charges[i].date
+			d=charges[0].date
 			mon=parseInt(d.substr(5,2))-1;
 			mon*=3;
 			listItem=document.createElement('li');
@@ -346,7 +346,6 @@ id("fileChooser").addEventListener('change',function() {
     		request.onerror = function(e) {console.log("error adding log");};
     	}
     	console.log('import charges: '+charges);
-    	
     	var charge;
     	charges=[];
     	for(i=0;i<chargeData.length;i++) {
