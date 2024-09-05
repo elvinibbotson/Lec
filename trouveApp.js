@@ -210,9 +210,10 @@ function populateList() {
 	 		 	listItem.classList.add('log-item');
 				listItem.addEventListener('click', function(){logIndex=this.index; openLog(true);});
 				d=logs[i].date;
-				mon=parseInt(d.substr(5,2))-1;
+				mon=parseInt(d.substr(5,2));
 				
 				thisMonth=mon; // TEST
+				mon--; // TEST
 				
 				mon*=3;
 				html=months.substr(mon,3)+" "+d.substr(0,4); // month logs date is Mon YYYY
@@ -247,7 +248,7 @@ function populateList() {
 				console.log('charge log '+i+' date:'+charges[i].date+' miles:'+charges[i].miles+' from '+charges[i].startCharge+' to '+charges[i].endCharge);
   				d=charges[i].date;
   				
-  				mon=parseInt(d.substr(5,2))-1; // TEST
+  				mon=parseInt(d.substr(5,2)); // TEST
   				if(mon!=thisMonth) thisMonth=mon; //TEST
   				
   				listItem.innerText=d.substr(8,2)+' '+charges[i].startCharge+'-'+charges[i].endCharge+'% '; // add charge percents
