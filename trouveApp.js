@@ -52,14 +52,10 @@ id('buttonNew').addEventListener('click', function() { // show the log dialog
 // ADD NEW CHARGE LOG
 id('buttonAddLog').addEventListener('click', function() {
 	var month=parseInt(id('logDate').value.substr(5,2));
-	alert('thisMonth: '+thisMonth+'; month: '+month+' '+charges.length+' charges');
-	if(thisMonth===null) {
-		thisMonth=month;
-		window.localStorage.setItem('thisMonth',month); // NOT NEEDED?
-	}
+	console.log('thisMonth: '+thisMonth+'; month: '+month+' '+charges.length+' charges');
+	if(thisMonth===null) thisMonth=month;
 	else if(month!=thisMonth) { // first entry for another month
 		thisMonth=month;
-		window.localStorage.setItem('thisMonth',month); // NOT NEEDED?
 		if(charges.length>0) { // make new month log from previous month's charges
 			console.log('another month - create new month log');
 			log={}; // create new month log from last month's charges
@@ -77,7 +73,6 @@ id('buttonAddLog').addEventListener('click', function() {
 				addChargeLog();
 			}
 			addRequest.onerror=function(event) {console.log('error adding month '+i);}
-			console.log('saved thisMonth: '+month);
 		}
 		else addChargeLog(); 
 	}
@@ -194,9 +189,7 @@ function populateList() {
 			var total={};
 			total.miles=0;
 			total.percent=0;
-			
-			thisMonth=0; // TEST
-			
+			thisMonth=0;
 			logs.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)}); // date order
 			console.log("list "+logs.length+" month logs");
 			id('list').innerHTML=""; // clear list
@@ -211,10 +204,8 @@ function populateList() {
 				listItem.addEventListener('click', function(){logIndex=this.index; openLog(true);});
 				d=logs[i].date;
 				mon=parseInt(d.substr(5,2));
-				
-				thisMonth=mon; // TEST
-				mon--; // TEST
-				
+				thisMonth=mon;
+				mon--; // months 0-11
 				mon*=3;
 				html=months.substr(mon,3)+" "+d.substr(0,4); // month logs date is Mon YYYY
 				/* html+=' '+logs[i].miles+'miles '+logs[i].percent+'%';
@@ -247,10 +238,8 @@ function populateList() {
 				var itemText=document.createElement('span');
 				console.log('charge log '+i+' date:'+charges[i].date+' miles:'+charges[i].miles+' from '+charges[i].startCharge+' to '+charges[i].endCharge);
   				d=charges[i].date;
-  				
-  				mon=parseInt(d.substr(5,2)); // TEST
-  				if(mon!=thisMonth) thisMonth=mon; //TEST
-  				
+  				mon=parseInt(d.substr(5,2));
+  				if(mon!=thisMonth) thisMonth=mon;
   				listItem.innerText=d.substr(8,2)+' '+charges[i].startCharge+'-'+charges[i].endCharge+'% '; // add charge percents
   				listItem.innerText+='@'+charges[i].miles; // add mileage
   				if(i>0) {
@@ -264,9 +253,7 @@ function populateList() {
   				total.percent+=(charges[i].endCharge-charges[i].startCharge);
 				id('list').appendChild(listItem);
   			}
-  			
-  			alert('thisMonth: '+thisMonth); // TEST
-  			
+  			console.log('thisMonth: '+thisMonth);
   			console.log('totals: '+total.miles+' miles; '+total.percent+' %');
   			mpk=total.miles/(capacity*total.percent/100);
 			mpk*=10;
@@ -275,7 +262,7 @@ function populateList() {
 			id('heading').innerText='Peugeot e208: '+mpk+' miles/kWh';
 			// TRY IT HERE
 			console.log('check need to backup');
-			var month=new Date().getMonth(); // WAS thisMonth CONFUSINGLY
+			var month=new Date().getMonth();
 			if(month!=lastSave) backup(); // monthly backups
 		}
 		
@@ -383,16 +370,12 @@ scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
 lastSave=window.localStorage.getItem('trouveSave'); // get month of last backup
-/* TEST
-thisMonth=window.localStorage.getItem('thisMonth'); // get month of latest charges
-*/
 chargeData=window.localStorage.getItem('chargeData');
 console.log('chargeData: '+chargeData);
 if(chargeData && chargeData!='undefined') {
 	charges=JSON.parse(chargeData); // restore saved charges
 	console.log(charges.length+' charges restored');
 }
-// console.log('lastSave: '+lastSave+'; thisMonth: '+thisMonth);
 var request=window.indexedDB.open("trouveDB");
 request.onsuccess=function(event) {
     db=event.target.result;
