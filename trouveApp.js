@@ -16,7 +16,8 @@ var logIndex=null;
 var currentLog=null
 var currentDialog;
 var startX;
-var lastSave=-1;
+var thisWeek; // weeks since 1st Sept 1970
+var backupWeek=0; // week of last backup;
 var thisMonth=0;
 var months="JanFebMarAprMayJunJulAugSepOctNovDec";
 var capacity=48; // usable battery capacity (kWh) for Peugeot e-208
@@ -223,14 +224,15 @@ function populateList() {
 				id('list').appendChild(listItem);
 			}
 			console.log('list '+charges.length+' charges');
-			d=charges[0].date
-			mon=parseInt(d.substr(5,2))-1;
-			mon*=3;
-			listItem=document.createElement('li');
-			listItem.innerText='this month ('+months.substr(mon,3)+')';
-			listItem.style='font-weight:bold';
-			id('list').appendChild(listItem);
-  			for( i in charges) { // list this month's charges after month logs
+			if(charges.length>0) {
+				d=charges[0].date;
+				mon=parseInt(d.substr(5,2))-1;
+				mon*=3;
+				listItem=document.createElement('li');
+				listItem.innerText='this month ('+months.substr(mon,3)+')';
+				listItem.style='font-weight:bold';
+				id('list').appendChild(listItem);
+  				for( i in charges) { // list this month's charges after month logs
   			var listItem=document.createElement('li');
 				listItem.index=i;
 	 		 	listItem.classList.add('log-item');
@@ -253,6 +255,7 @@ function populateList() {
   				total.percent+=(charges[i].endCharge-charges[i].startCharge);
 				id('list').appendChild(listItem);
   			}
+			}
   			console.log('thisMonth: '+thisMonth);
   			console.log('totals: '+total.miles+' miles; '+total.percent+' %');
   			mpk=total.miles/(capacity*total.percent/100);
@@ -262,8 +265,9 @@ function populateList() {
 			id('heading').innerText='Peugeot e208: '+mpk+' miles/kWh';
 			// TRY IT HERE
 			console.log('check need to backup');
-			var month=new Date().getMonth();
-			if(month!=lastSave) backup(); // monthly backups
+			thisWeek=Math.floor(new Date().getTime()/604800000); // weeks since 1st Sept 1970
+			console.log('backupWeek: '+backupWeek+'; thisWeek: '+thisWeek);
+			if(thisWeek>backupWeek) backup(); // monthly backups
 		}
 		
 	}
@@ -275,13 +279,13 @@ function populateList() {
 id('backupButton').addEventListener('click',backup);
 function backup() {
   	console.log("save backup");
-	var fileName="trouve";
-	var date=new Date();
-	fileName+=date.getFullYear();
-	if(date.getMonth()<9) fileName+='0'; // date format YYYYMMDD
-	fileName+=(date.getMonth()+1);
-	if(date.getDate()<10) fileName+='0';
-	fileName+=date.getDate()+".json";
+	var fileName="Trouve-"+thisWeek+'.json';
+	// var date=new Date();
+	// fileName+=date.getFullYear();
+	// if(date.getMonth()<9) fileName+='0'; // date format YYYYMMDD
+	// fileName+=(date.getMonth()+1);
+	// if(date.getDate()<10) fileName+='0';
+	// fileName+=date.getDate()+".json";
  	var dbTransaction=db.transaction('logs',"readwrite");
 	console.log("indexedDB transaction ready");
 	var dbObjectStore=dbTransaction.objectStore('logs');
@@ -309,9 +313,8 @@ function backup() {
    			a.download=fileName;
     		document.body.appendChild(a);
     		a.click();
-			var today=new Date();
-			lastSave=today.getMonth();
-			window.localStorage.setItem('trouveSave',lastSave); // remember month of backup
+			backupWeek=thisWeek;
+			window.localStorage.setItem('backupWeek',thisWeek); // remember week of backup
 			display(fileName+" saved to downloads folder");
 		}
 	}
@@ -369,7 +372,9 @@ id("fileChooser").addEventListener('change',function() {
 scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
-lastSave=window.localStorage.getItem('trouveSave'); // get month of last backup
+backupWeek=window.localStorage.getItem('backupWeek'); // get month of last backup
+if(backupWeek==null) backupWeek=0;
+console.log('backupWeek: '+backupWeek);
 chargeData=window.localStorage.getItem('chargeData');
 console.log('chargeData: '+chargeData);
 if(chargeData && chargeData!='undefined') {
@@ -453,6 +458,9 @@ request.onsuccess=function(event) {
 		    populateList();
 	    }
     };
+    request.onerror=function(err) {
+    	alert('IndexedDB error '+err.message);
+    }
 };
 request.onupgradeneeded=function(event) {
 	var dbObjectStore = event.currentTarget.result.createObjectStore("logs", { keyPath: "id", autoIncrement: true });
