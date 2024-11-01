@@ -38,13 +38,14 @@ body {
       -ms-flex-line-pack: stretch;
           align-content: stretch;
   color: white;
-  background: "black" }
+  background: "dimgray" }
  
 input {
 	font-size: 1.2em;
 	height: 34px;
+	width: 65px;
 	color: white;
-	background-color: black;
+	background-color: dimgray;
 	border: none;
 }
 
@@ -92,14 +93,18 @@ li {
 }
 
 .dialog {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 100%;
-  padding: 10px;
-  background: dimgray;
-  display: none;
-  z-index: 100;
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	padding: 10px;
+	margin: 10px;
+	border: solid white 2px;
+	border-radius: 10px;
+	color: white;
+	background-color: gray;
+	z-index: 100;
+	display: none;
 }
 .dialog > div {
   padding-top: 24px;
@@ -151,14 +156,14 @@ li {
 	font-size:1.2em;
 	font-weight: bold;
 	color: white;
-	background-color:gray;
+	background-color: gray;
 	float: right;
 }
 
 #heading {
 	height: 34px;
 	font-size: 1.5em;
-	background-color: #333;
+	background-color: dimgray;
 }
 
 #main {
@@ -176,7 +181,7 @@ li {
 }
 
 #logDate {
-	width: 120px;
+	width: 100px;
 	height: 34px;
 	font-family: 'Helvetica', 'Verdana', sans-serif;
 }
@@ -187,5 +192,8 @@ li {
 }
 
 #fileChooser {
-	margin: 20px;
+	height: 30px;
+	width: 100%;
+	font-size: 1.5em;
+	background-color: gray;
 }
