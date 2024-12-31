@@ -1,0 +1,199 @@
+html, body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-family: 'Helvetica', 'Verdana', sans-serif;
+  font-weight: 400;
+  font-display: optional;
+  color: #444;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; }
+
+html {
+  overflow: hidden; }
+
+body {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-flex-wrap: nowrap;
+      -ms-flex-wrap: nowrap;
+          flex-wrap: nowrap;
+  -webkit-box-pack: start;
+  -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  -webkit-box-align: stretch;
+  -webkit-align-items: stretch;
+      -ms-flex-align: stretch;
+          align-items: stretch;
+  -webkit-align-content: stretch;
+      -ms-flex-line-pack: stretch;
+          align-content: stretch;
+  color: white;
+  background: "dimgray" }
+ 
+input {
+	font-size: 1.2em;
+	height: 34px;
+	width: 65px;
+	color: white;
+	background-color: dimgray;
+	border: none;
+}
+
+li {
+	background: gray;
+}
+
+.action-button {
+	display: block;
+	position: fixed;
+	width: 50px;
+	height: 50px;
+	border: 2px solid white;
+	border-radius: 10px;
+	background: gray;
+	z-index: 50;
+}
+
+.action-button img {
+	display: block;
+	width: 24px;
+	height: 24px;
+	padding: 13px;
+}
+  
+.logList {
+    margin: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.2s ease-in-out;
+    padding: 0 0.5em 3em;
+}
+
+.log-item {
+	margin-bottom: 5px;
+	display: block;
+	font-size: 1.2em;
+	color: white;
+}
+
+.right {
+	margin-right: 5px;
+	float: right;
+}
+
+.dialog {
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	padding: 10px;
+	margin: 10px;
+	border: solid white 2px;
+	border-radius: 10px;
+	color: white;
+	background-color: gray;
+	z-index: 100;
+	display: none;
+}
+.dialog > div {
+  padding-top: 24px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.dialog-title {
+  padding-top: 20px;
+  font-size: 1em;
+  font-weight: bold;
+}
+.dialog-body {
+  padding-top: 5px;
+  padding-bottom: 5px; }
+
+.dialog-buttons {
+  width: 80%;
+  padding: 10px;
+	margin: 20px;
+}
+
+.add-button {
+	width: 50px;
+	height: 24px;
+	border: none;
+    float: right;
+    background: url(newButton24px.svg) center center no-repeat;
+}
+.save-button {
+	width: 50px;
+	height: 24px;
+	border: none;
+    float: right;
+    background: url(okButton24px.svg) center center no-repeat;
+}
+.delete-button {
+    float: left;
+    width: 50px;
+	height: 24px;
+	border: none;
+    margin-right: 48px;
+	background: url(deleteButton24px.svg) center center no-repeat;
+}
+.text-button {
+	border: 2px solid white;
+	border-radius: 10px;
+	margin: 15px;
+	padding: 5px;
+	font-size:1.2em;
+	font-weight: bold;
+	color: white;
+	background-color: gray;
+	float: right;
+}
+
+#heading {
+	height: 34px;
+	font-size: 1.5em;
+	background-color: dimgray;
+}
+
+#main {
+  width: 100%;
+  position: relative;
+  padding-top: 10px;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+      -ms-flex: 1;
+          flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background-color: #333;
+}
+
+#logDate {
+	width: 100px;
+	height: 34px;
+	font-family: 'Helvetica', 'Verdana', sans-serif;
+}
+
+#buttonNew {
+	right: 20px;
+	bottom: 20px;
+}
+
+#fileChooser {
+	height: 30px;
+	width: 100%;
+	font-size: 1.5em;
+	background-color: gray;
+}
