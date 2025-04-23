@@ -3,7 +3,7 @@ html, body {
   margin: 0;
   height: 100%;
   width: 100%;
-  font-family: 'Helvetica', 'Verdana', sans-serif;
+  font-family: 'Lucida Console','Courier',monospace;
   font-weight: 400;
   font-display: optional;
   color: #444;
@@ -83,7 +83,7 @@ li {
 .log-item {
 	margin-bottom: 5px;
 	display: block;
-	font-size: 1.2em;
+	font-size: 1em;
 	color: white;
 }
 
@@ -161,9 +161,11 @@ li {
 }
 
 #heading {
-	height: 34px;
-	font-size: 1.5em;
-	background-color: dimgray;
+	height: 24px;
+	padding: 5px;
+	font-size: 1.2em;
+	font-weight: bold;
+	background-color: black;
 }
 
 #main {
@@ -183,7 +185,7 @@ li {
 #logDate {
 	width: 100px;
 	height: 34px;
-	font-family: 'Helvetica', 'Verdana', sans-serif;
+	font-family: 'Lucida Console','Courier',monospace;
 }
 
 #buttonNew {

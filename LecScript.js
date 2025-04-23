@@ -219,7 +219,7 @@ function populateList() {
 				total.percent+=logs[i].percent;
 				mpk=logs[i].miles/(capacity*logs[i].percent/100);
 				mpk=Math.floor(mpk*10)/10;
-				listItem.innerText=html+': '+logs[i].miles+'mi '+mpk+' mi/kWh';
+				listItem.innerText=html+': '+logs[i].miles+'mi '+mpk;
 				listItem.style.width=scr.w*mpk/5+'px';
 				id('list').appendChild(listItem);
 			}
