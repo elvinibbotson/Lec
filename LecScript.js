@@ -64,6 +64,11 @@ id('buttonAddLog').addEventListener('click', function() {
 			log.percent=0; // tot up percent charge for month
 			for(var i in charges) log.percent+=(charges[i].endCharge-charges[i].startCharge);
 			console.log('new log: '+log.date+' '+log.miles+' miles '+log.percent+'%');
+			logs.push(log);
+			charges=[]; // clear charges array
+			console.log('month log saved');
+			addChargeLog();
+			/*
 			var dbTransaction=db.transaction('logs',"readwrite");
 			var dbObjectStore=dbTransaction.objectStore('logs');
 			var addRequest=dbObjectStore.add(log);
@@ -73,6 +78,7 @@ id('buttonAddLog').addEventListener('click', function() {
 				addChargeLog();
 			}
 			addRequest.onerror=function(event) {console.log('error adding month '+i);}
+			*/
 		}
 		else addChargeLog(); 
 	}
@@ -494,6 +500,8 @@ if(logData && logData!='undefined') {
 	logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
 	populateList();
 }
+else toggleDialog('importDialog',true);
+/*
 else {
 	var request=window.indexedDB.open("LecDB");
 	request.onsuccess=function(event) {
@@ -529,6 +537,7 @@ else {
     }
 };
 }
+*/
 /*
 request.onupgradeneeded=function(event) {
 	var dbObjectStore = event.currentTarget.result.createObjectStore("logs", { keyPath: "id", autoIncrement: true });
