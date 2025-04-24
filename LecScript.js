@@ -2,9 +2,7 @@ function id(el) {
 	// console.log("return element whose id is "+el);
 	return document.getElementById(el);
 }
-
 'use strict';
-	
 // GLOBAL VARIABLES
 var scr={}; // screen size .w & .h and cursor coordinates .x & .y
 var db=null;
@@ -12,6 +10,8 @@ var logs=[]; // monthly logs - from database
 var charges=[]; // this month's charges
 var log=null;
 var charge=null;
+var chargeData=null;
+var logData=null;
 var logIndex=null;
 var currentLog=null
 var currentDialog;
@@ -21,7 +21,6 @@ var backupWeek=0; // week of last backup;
 var thisMonth=0;
 var months="JanFebMarAprMayJunJulAugSepOctNovDec";
 var capacity=48; // usable battery capacity (kWh) for Peugeot e-208
-
 // EVENT LISTENERS
 id('main').addEventListener('touchstart', function(event) {
     // console.log(event.changedTouches.length+" touches");
@@ -87,12 +86,12 @@ function addChargeLog() {
 	charge.endCharge=parseInt(id('logEndCharge').value);
 	console.log('add charge log: '+charge.date+'; '+charge.miles+'; '+charge.startCharge+'-'+charge.endCharge);
 	charges.push(charge); // save to charges[]
-	var chargeData=JSON.stringify(charges);
+	chargeData=JSON.stringify(charges);
 	window.localStorage.setItem('chargeData',chargeData); 
     toggleDialog('logDialog',false);
     populateList();
 }
-// SAVE CHANGED LOG
+// SAVE CHANGED CHARGE LOG
 id('buttonSaveLog').addEventListener('click',function() {
 	charge={};
 	charge.date=id('logDate').value;
@@ -176,6 +175,82 @@ function openLog(month) {
 // POPULATE LOGS LIST
 function populateList() {
 	console.log("populate log list");
+	// NEW CODE...
+	var total={};
+	total.miles=0;
+	total.percent=0;
+	thisMonth=0;
+	logs.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)}); // date order
+	console.log("list "+logs.length+" month logs");
+	id('list').innerHTML=""; // clear list
+	var html="";
+	var d="";
+	var mon=0;
+	var mpk=0; // miles per kWh
+  	for(var i=0; i<logs.length; i++) { // list month logs first
+  		var listItem=document.createElement('li');
+		listItem.index=i;
+	 	listItem.classList.add('log-item');
+		listItem.addEventListener('click', function(){logIndex=this.index; openLog(true);});
+		d=logs[i].date;
+		mon=parseInt(d.substr(5,2));
+		thisMonth=mon;
+		mon--; // months 0-11
+		mon*=3;
+		html=months.substr(mon,3)+" "+d.substr(0,4); // month logs date is Mon YYYY
+		total.miles+=logs[i].miles;
+		total.percent+=logs[i].percent;
+		mpk=logs[i].miles/(capacity*logs[i].percent/100);
+		mpk=Math.floor(mpk*10)/10;
+		listItem.innerText=html+': '+logs[i].miles+'mi '+mpk;
+		listItem.style.width=scr.w*mpk/5+'px';
+		id('list').appendChild(listItem);
+	}
+	console.log('list '+charges.length+' charges');
+	if(charges.length>0) {
+		d=charges[0].date;
+		mon=parseInt(d.substr(5,2))-1;
+		mon*=3;
+		listItem=document.createElement('li');
+		listItem.innerText='this month ('+months.substr(mon,3)+')';
+		listItem.style='font-weight:bold';
+		id('list').appendChild(listItem);
+  		for( i in charges) { // list this month's charges after month logs
+  			var listItem=document.createElement('li');
+			listItem.index=i;
+	 	 	listItem.classList.add('log-item');
+			listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
+			var itemText=document.createElement('span');
+			console.log('charge log '+i+' date:'+charges[i].date+' miles:'+charges[i].miles+' from '+charges[i].startCharge+' to '+charges[i].endCharge);
+  			d=charges[i].date;
+  			mon=parseInt(d.substr(5,2));
+  			if(mon!=thisMonth) thisMonth=mon;
+  			listItem.innerText=d.substr(8,2)+' '+charges[i].startCharge+'-'+charges[i].endCharge+'% '; // add charge percents
+  			listItem.innerText+='@'+charges[i].miles; // add mileage
+  			if(i>0) {
+  				mpk=(charges[i].miles-charges[i-1].miles)/(capacity*(charges[i-1].endCharge-charges[i].startCharge)/100);
+  				mpk*=10;
+  				mpk=Math.round(mpk);
+  				mpk/=10;
+  			}
+  			if(i>0) listItem.style.width=scr.w*mpk/5+'px';
+  			if(i>0) total.miles+=(charges[i].miles-charges[i-1].miles);
+  			total.percent+=(charges[i].endCharge-charges[i].startCharge);
+			id('list').appendChild(listItem);
+  		}
+	}
+  	console.log('thisMonth: '+thisMonth);
+  	console.log('totals: '+total.miles+' miles; '+total.percent+' %');
+  	mpk=total.miles/(capacity*total.percent/100);
+	mpk*=10;
+	mpk=Math.round(mpk);
+ 	mpk/=10; // one decimal place
+	id('heading').innerText='Peugeot e208: '+mpk+' miles/kWh';
+	// save data
+	logData=JSON.stringify(logs);
+	window.localStorage.setItem('logData',logData);
+	console.log('logs listed & data saved');
+	/* OLD CODE...
 	logs=[];
 	var dbTransaction=db.transaction('logs',"readwrite");
 	var dbObjectStore=dbTransaction.objectStore('logs');
@@ -209,12 +284,6 @@ function populateList() {
 				mon--; // months 0-11
 				mon*=3;
 				html=months.substr(mon,3)+" "+d.substr(0,4); // month logs date is Mon YYYY
-				/* html+=' '+logs[i].miles+'miles '+logs[i].percent+'%';
-				// itemText.innerText=html;
-				listItem.appendChild(itemText);
-				var itemRate=document.createElement('span');
-				itemRate.classList.add('right');
-				*/
 				total.miles+=logs[i].miles;
 				total.percent+=logs[i].percent;
 				mpk=logs[i].miles/(capacity*logs[i].percent/100);
@@ -261,8 +330,14 @@ function populateList() {
   			mpk=total.miles/(capacity*total.percent/100);
 			mpk*=10;
 			mpk=Math.round(mpk);
-			mpk/=10; // one decimal place
+ 			mpk/=10; // one decimal place
 			id('heading').innerText='Peugeot e208: '+mpk+' miles/kWh';
+			
+			// save data
+			logData=JSON.stringify(logs);
+		    window.localStorage.setItem('logData',logData);
+		    console.log('logs listed & data saved');
+		    	
 			// TRY IT HERE
 			console.log('check need to backup');
 			thisWeek=Math.floor(new Date().getTime()/604800000); // weeks since 1st Sept 1970
@@ -274,6 +349,7 @@ function populateList() {
 	request.onerror=function(event) {
 		console.log("cursor request failed");
 	}
+	*/
 }
 // IMPORT/BACKUP
 id('backupButton').addEventListener('click',backup);
@@ -333,7 +409,19 @@ id("fileChooser").addEventListener('change',function() {
     	console.log('data... logs: '+data.logs+'; charges: '+data.logs);
     	var json=JSON.parse(data);
     	console.log("json: "+json);
-    	var logs=json.logs;
+    	// NEW CODE...
+    	logs=[];
+    	for(var i=0;i<json.logs.length;i++) { // discard redundant log IDs
+    		logs[i]={};
+    		logs[i].date=json.logs[i].date;
+    		logs[i].miles=json.logs[i].miles;
+    		logs[i].percent=json.logs[i].percent;
+    	}
+    	logData=JSON.stringify(logs);
+    	window.localStorage.setItem('logData',logData);
+    	charges=json.charges;
+    	/* OLD CODE...
+    	logs=json.logs;
     	var chargeData=json.charges;
     	console.log(logs.length+" logs "+chargeData.length+" charges loaded");
     	console.log('import logs: '+logs);
@@ -361,6 +449,7 @@ id("fileChooser").addEventListener('change',function() {
     		charge.endCharge=chargeData[i].endCharge;
     		charges.push(charge);
     	}
+    	*/
     	chargeData=JSON.stringify(charges);
     	window.localStorage.setItem('chargeData',chargeData);
     	toggleDialog('importDialog',false);
@@ -381,39 +470,50 @@ if(chargeData && chargeData!='undefined') {
 	charges=JSON.parse(chargeData); // restore saved charges
 	console.log(charges.length+' charges restored');
 }
-var request=window.indexedDB.open("LecDB");
-request.onsuccess=function(event) {
-    db=event.target.result;
-    console.log("DB open");
-    var dbTransaction=db.transaction('logs',"readwrite");
-    console.log("indexedDB transaction ready");
-    var dbObjectStore=dbTransaction.objectStore('logs');
-    console.log("indexedDB objectStore ready");
-    // code to read logs from database
-    logs=[];
-    console.log("logs array ready");
-    var request=dbObjectStore.openCursor();
-    request.onsuccess = function(event) {  
-	    var cursor=event.target.result;  
-        if (cursor) {
-		    logs.push(cursor.value);
-	    	cursor.continue();  
-        }
-	    else {
-		    console.log("No more entries!");
-		    console.log(logs.length+" logs");
-		    if(logs.length<1) { // no logs: offer to restore backup
-		        toggleDialog('importDialog',true);
-		        return
-		    }
-		    logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
-		    populateList();
-	    }
+logData=window.localStorage.getItem('logData');
+console.log('logData: '+logData);
+if(logData && logData!='undefined') {
+	logs=JSON.parse(logData); // restore saved logs
+	console.log(logs.length+' logs restored');
+	logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
+	populateList();
+}
+else {
+	var request=window.indexedDB.open("LecDB");
+	request.onsuccess=function(event) {
+    	db=event.target.result;
+	    console.log("DB open");
+		var dbTransaction=db.transaction('logs',"readwrite");
+    	console.log("indexedDB transaction ready");
+    	var dbObjectStore=dbTransaction.objectStore('logs');
+    	console.log("indexedDB objectStore ready");
+    	// code to read logs from database
+    	logs=[];
+    	console.log("logs array ready");
+    	var request=dbObjectStore.openCursor();
+    	request.onsuccess = function(event) {  
+	    	var cursor=event.target.result;  
+        	if (cursor) {
+		    	logs.push(cursor.value);
+	    		cursor.continue();  
+        	}
+	    	else {
+		    	console.log("No more entries!");
+		    	console.log(logs.length+" logs");
+		    	if(logs.length<1) { // no logs: offer to restore backup
+		        	toggleDialog('importDialog',true);
+		        	return
+		    	}
+		    	logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
+		    	populateList();
+	    	}
     };
     request.onerror=function(err) {
     	alert('IndexedDB error '+err.message);
     }
 };
+}
+/*
 request.onupgradeneeded=function(event) {
 	var dbObjectStore = event.currentTarget.result.createObjectStore("logs", { keyPath: "id", autoIncrement: true });
 	console.log("new logs ObjectStore created");
@@ -421,6 +521,7 @@ request.onupgradeneeded=function(event) {
 request.onerror=function(event) {
 	alert("indexedDB error");
 };
+*/
 // implement service worker if browser is PWA friendly 
 if (navigator.serviceWorker.controller) {
 	console.log('Active service worker found, no need to register')
