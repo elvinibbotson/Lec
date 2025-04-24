@@ -16,9 +16,9 @@ var logIndex=null;
 var currentLog=null
 var currentDialog;
 var startX;
-var thisWeek; // weeks since 1st Sept 1970
-var backupWeek=0; // week of last backup;
-var thisMonth=0;
+// var thisWeek; // weeks since 1st Sept 1970
+// var backupWeek=0; // week of last backup;
+// var thisMonth=0;
 var months="JanFebMarAprMayJunJulAugSepOctNovDec";
 var capacity=48; // usable battery capacity (kWh) for Peugeot e-208
 // EVENT LISTENERS
@@ -355,7 +355,20 @@ function populateList() {
 id('backupButton').addEventListener('click',backup);
 function backup() {
   	console.log("save backup");
-	var fileName="Lec-"+thisWeek+'.json';
+	var fileName='Lec.json';
+	var data={'logs': logs, 'charges':charges};
+	var json=JSON.stringify(data);
+	var blob=new Blob([json],{type:"data:application/json"});
+  	var a=document.createElement('a');
+	a.style.display='none';
+    var url=window.URL.createObjectURL(blob);
+	console.log("data ready to save: "+blob.size+" bytes");
+   	a.href=url;
+   	a.download=fileName;
+    document.body.appendChild(a);
+    a.click();
+    display(fileName+" saved to downloads folder");
+    /*
 	// var date=new Date();
 	// fileName+=date.getFullYear();
 	// if(date.getMonth()<9) fileName+='0'; // date format YYYYMMDD
@@ -395,6 +408,7 @@ function backup() {
 		}
 	}
 	request.onerror=function(event) {alert('backup failed');}
+	*/
 }
 id('importButton').addEventListener('click',function() {
 	toggleDialog('importDialog',true);
@@ -461,9 +475,11 @@ id("fileChooser").addEventListener('change',function() {
 scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
+/* manual backups only
 backupWeek=window.localStorage.getItem('backupWeek'); // get month of last backup
 if(backupWeek==null) backupWeek=0;
 console.log('backupWeek: '+backupWeek);
+*/
 chargeData=window.localStorage.getItem('chargeData');
 console.log('chargeData: '+chargeData);
 if(chargeData && chargeData!='undefined') {
