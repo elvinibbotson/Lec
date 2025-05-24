@@ -1,5 +1,4 @@
 function id(el) {
-	// console.log("return element whose id is "+el);
 	return document.getElementById(el);
 }
 'use strict';
@@ -16,9 +15,6 @@ var logIndex=null;
 var currentLog=null
 var currentDialog;
 var startX;
-// var thisWeek; // weeks since 1st Sept 1970
-// var backupWeek=0; // week of last backup;
-// var thisMonth=0;
 var months="JanFebMarAprMayJunJulAugSepOctNovDec";
 var capacity=48; // usable battery capacity (kWh) for Peugeot e-208
 // EVENT LISTENERS
@@ -68,17 +64,6 @@ id('buttonAddLog').addEventListener('click', function() {
 			charges=[]; // clear charges array
 			console.log('month log saved');
 			addChargeLog();
-			/*
-			var dbTransaction=db.transaction('logs',"readwrite");
-			var dbObjectStore=dbTransaction.objectStore('logs');
-			var addRequest=dbObjectStore.add(log);
-			addRequest.onsuccess=function(event) {
-				charges=[]; // clear charges array
-				console.log('month log saved');
-				addChargeLog();
-			}
-			addRequest.onerror=function(event) {console.log('error adding month '+i);}
-			*/
 		}
 		else addChargeLog(); 
 	}
@@ -117,12 +102,6 @@ id('buttonDeleteLog').addEventListener('click', function() {
 	charges.splice(logIndex,1);
 	var chargeData=JSON.stringify(charges);
 	window.localStorage.setItem('chargeData',chargeData);
-	/*
-	var text=log.text; // initiate delete log
-	console.log("delete log "+text);
-	toggleDialog(" ", true);
-	id('deleteText').innerHTML=text;
-	*/
 	toggleDialog("logDialog", false);
 	populateList();
 });
@@ -181,7 +160,6 @@ function openLog(month) {
 // POPULATE LOGS LIST
 function populateList() {
 	console.log("populate log list");
-	// NEW CODE...
 	var total={};
 	total.miles=0;
 	total.percent=0;
@@ -252,110 +230,9 @@ function populateList() {
 	mpk=Math.round(mpk);
  	mpk/=10; // one decimal place
 	id('heading').innerText='Peugeot e208: '+mpk+' miles/kWh';
-	// save data
 	logData=JSON.stringify(logs);
 	window.localStorage.setItem('logData',logData);
 	console.log('logs listed & data saved');
-	/* OLD CODE...
-	logs=[];
-	var dbTransaction=db.transaction('logs',"readwrite");
-	var dbObjectStore=dbTransaction.objectStore('logs');
-	var request=dbObjectStore.openCursor();
-	request.onsuccess=function(event) {  
-		var cursor=event.target.result;  
-    	if(cursor) {
-			logs.push(cursor.value);
-			cursor.continue();
-    	}
-		else {
-			var total={};
-			total.miles=0;
-			total.percent=0;
-			thisMonth=0;
-			logs.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)}); // date order
-			console.log("list "+logs.length+" month logs");
-			id('list').innerHTML=""; // clear list
-			var html="";
-			var d="";
-			var mon=0;
-			var mpk=0; // miles per kWh
-  			for(var i=0; i<logs.length; i++) { // list month logs first
-  			 	var listItem=document.createElement('li');
-				listItem.index=i;
-	 		 	listItem.classList.add('log-item');
-				listItem.addEventListener('click', function(){logIndex=this.index; openLog(true);});
-				d=logs[i].date;
-				mon=parseInt(d.substr(5,2));
-				thisMonth=mon;
-				mon--; // months 0-11
-				mon*=3;
-				html=months.substr(mon,3)+" "+d.substr(0,4); // month logs date is Mon YYYY
-				total.miles+=logs[i].miles;
-				total.percent+=logs[i].percent;
-				mpk=logs[i].miles/(capacity*logs[i].percent/100);
-				mpk=Math.floor(mpk*10)/10;
-				listItem.innerText=html+': '+logs[i].miles+'mi '+mpk;
-				listItem.style.width=scr.w*mpk/5+'px';
-				id('list').appendChild(listItem);
-			}
-			console.log('list '+charges.length+' charges');
-			if(charges.length>0) {
-				d=charges[0].date;
-				mon=parseInt(d.substr(5,2))-1;
-				mon*=3;
-				listItem=document.createElement('li');
-				listItem.innerText='this month ('+months.substr(mon,3)+')';
-				listItem.style='font-weight:bold';
-				id('list').appendChild(listItem);
-  				for( i in charges) { // list this month's charges after month logs
-  			var listItem=document.createElement('li');
-				listItem.index=i;
-	 		 	listItem.classList.add('log-item');
-				listItem.addEventListener('click', function(){logIndex=this.index; openLog();});
-				var itemText=document.createElement('span');
-				console.log('charge log '+i+' date:'+charges[i].date+' miles:'+charges[i].miles+' from '+charges[i].startCharge+' to '+charges[i].endCharge);
-  				d=charges[i].date;
-  				mon=parseInt(d.substr(5,2));
-  				if(mon!=thisMonth) thisMonth=mon;
-  				listItem.innerText=d.substr(8,2)+' '+charges[i].startCharge+'-'+charges[i].endCharge+'% '; // add charge percents
-  				listItem.innerText+='@'+charges[i].miles; // add mileage
-  				if(i>0) {
-  					mpk=(charges[i].miles-charges[i-1].miles)/(capacity*(charges[i-1].endCharge-charges[i].startCharge)/100);
-  					mpk*=10;
-  					mpk=Math.round(mpk);
-  					mpk/=10;
-  				}
-  				if(i>0) listItem.style.width=scr.w*mpk/5+'px';
-  				if(i>0) total.miles+=(charges[i].miles-charges[i-1].miles);
-  				total.percent+=(charges[i].endCharge-charges[i].startCharge);
-				id('list').appendChild(listItem);
-  			}
-			}
-  			console.log('thisMonth: '+thisMonth);
-  			console.log('totals: '+total.miles+' miles; '+total.percent+' %');
-  			mpk=total.miles/(capacity*total.percent/100);
-			mpk*=10;
-			mpk=Math.round(mpk);
- 			mpk/=10; // one decimal place
-			id('heading').innerText='Peugeot e208: '+mpk+' miles/kWh';
-			
-			// save data
-			logData=JSON.stringify(logs);
-		    window.localStorage.setItem('logData',logData);
-		    console.log('logs listed & data saved');
-		    	
-			// TRY IT HERE
-			console.log('check need to backup');
-			thisWeek=Math.floor(new Date().getTime()/604800000); // weeks since 1st Sept 1970
-			console.log('backupWeek: '+backupWeek+'; thisWeek: '+thisWeek);
-			if(thisWeek>backupWeek) backup(); // monthly backups
-		}
-		
-	}
-	request.onerror=function(event) {
-		console.log("cursor request failed");
-	}
-	*/
 }
 // IMPORT/BACKUP
 id('backupButton').addEventListener('click',backup);
@@ -374,47 +251,6 @@ function backup() {
     document.body.appendChild(a);
     a.click();
     display(fileName+" saved to downloads folder");
-    /*
-	// var date=new Date();
-	// fileName+=date.getFullYear();
-	// if(date.getMonth()<9) fileName+='0'; // date format YYYYMMDD
-	// fileName+=(date.getMonth()+1);
-	// if(date.getDate()<10) fileName+='0';
-	// fileName+=date.getDate()+".json";
- 	var dbTransaction=db.transaction('logs',"readwrite");
-	console.log("indexedDB transaction ready");
-	var dbObjectStore=dbTransaction.objectStore('logs');
-	console.log("indexedDB objectStore ready");
-	var logs=[];
-	var request=dbObjectStore.openCursor();
-	request.onsuccess = function(event) {  
-		var cursor=event.target.result;  
-    	if(cursor) {
-		    logs.push(cursor.value);
-			console.log("log "+cursor.value.id+", date: "+cursor.value.date);
-			cursor.continue();  
-    	}
-		else {
-			console.log(logs.length+" logs - sort and save");
-    		logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); //chronological order
-			var data={'logs': logs, 'charges':charges};
-			var json=JSON.stringify(data);
-			var blob=new Blob([json],{type:"data:application/json"});
-  			var a=document.createElement('a');
-			a.style.display='none';
-    		var url=window.URL.createObjectURL(blob);
-			console.log("data ready to save: "+blob.size+" bytes");
-   			a.href=url;
-   			a.download=fileName;
-    		document.body.appendChild(a);
-    		a.click();
-			backupWeek=thisWeek;
-			window.localStorage.setItem('backupWeek',thisWeek); // remember week of backup
-			display(fileName+" saved to downloads folder");
-		}
-	}
-	request.onerror=function(event) {alert('backup failed');}
-	*/
 }
 id('importButton').addEventListener('click',function() {
 	toggleDialog('importDialog',true);
@@ -429,7 +265,6 @@ id("fileChooser").addEventListener('change',function() {
     	console.log('data... logs: '+data.logs+'; charges: '+data.logs);
     	var json=JSON.parse(data);
     	console.log("json: "+json);
-    	// NEW CODE...
     	logs=[];
     	for(var i=0;i<json.logs.length;i++) { // discard redundant log IDs
     		logs[i]={};
@@ -440,36 +275,6 @@ id("fileChooser").addEventListener('change',function() {
     	logData=JSON.stringify(logs);
     	window.localStorage.setItem('logData',logData);
     	charges=json.charges;
-    	/* OLD CODE...
-    	logs=json.logs;
-    	var chargeData=json.charges;
-    	console.log(logs.length+" logs "+chargeData.length+" charges loaded");
-    	console.log('import logs: '+logs);
-    	var dbTransaction=db.transaction('logs',"readwrite");
-    	var dbObjectStore=dbTransaction.objectStore('logs');
-    	var clearRequest=dbObjectStore.clear();
-    	clearRequest.onsuccess=function(event) {console.log('logs data deleted');}
-    	for(var i=0;i<logs.length;i++) {
-    		console.log("add log "+i);
-    		var request = dbObjectStore.add(logs[i]);
-    		request.onsuccess = function(e) {
-    			console.log(logs.length+" logs added to database");
-    		};
-    		request.onerror = function(e) {console.log("error adding log");};
-    	}
-    	console.log('import charges: '+charges);
-    	var charge;
-    	charges=[];
-    	for(i=0;i<chargeData.length;i++) {
-    		console.log('add charge '+i);
-    		charge={};
-    		charge.date=chargeData[i].date;
-    		charge.miles=chargeData[i].miles;
-    		charge.startCharge=chargeData[i].startCharge;
-    		charge.endCharge=chargeData[i].endCharge;
-    		charges.push(charge);
-    	}
-    	*/
     	chargeData=JSON.stringify(charges);
     	window.localStorage.setItem('chargeData',chargeData);
     	toggleDialog('importDialog',false);
@@ -481,11 +286,6 @@ id("fileChooser").addEventListener('change',function() {
 scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
-/* manual backups only
-backupWeek=window.localStorage.getItem('backupWeek'); // get month of last backup
-if(backupWeek==null) backupWeek=0;
-console.log('backupWeek: '+backupWeek);
-*/
 chargeData=window.localStorage.getItem('chargeData');
 console.log('chargeData: '+chargeData);
 if(chargeData && chargeData!='undefined') {
@@ -501,52 +301,6 @@ if(logData && logData!='undefined') {
 	populateList();
 }
 else toggleDialog('importDialog',true);
-/*
-else {
-	var request=window.indexedDB.open("LecDB");
-	request.onsuccess=function(event) {
-    	db=event.target.result;
-	    console.log("DB open");
-		var dbTransaction=db.transaction('logs',"readwrite");
-    	console.log("indexedDB transaction ready");
-    	var dbObjectStore=dbTransaction.objectStore('logs');
-    	console.log("indexedDB objectStore ready");
-    	// code to read logs from database
-    	logs=[];
-    	console.log("logs array ready");
-    	var request=dbObjectStore.openCursor();
-    	request.onsuccess = function(event) {  
-	    	var cursor=event.target.result;  
-        	if (cursor) {
-		    	logs.push(cursor.value);
-	    		cursor.continue();  
-        	}
-	    	else {
-		    	console.log("No more entries!");
-		    	console.log(logs.length+" logs");
-		    	if(logs.length<1) { // no logs: offer to restore backup
-		        	toggleDialog('importDialog',true);
-		        	return
-		    	}
-		    	logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
-		    	populateList();
-	    	}
-    };
-    request.onerror=function(err) {
-    	alert('IndexedDB error '+err.message);
-    }
-};
-}
-*/
-/*
-request.onupgradeneeded=function(event) {
-	var dbObjectStore = event.currentTarget.result.createObjectStore("logs", { keyPath: "id", autoIncrement: true });
-	console.log("new logs ObjectStore created");
-};
-request.onerror=function(event) {
-	alert("indexedDB error");
-};
-*/
 // implement service worker if browser is PWA friendly 
 if (navigator.serviceWorker.controller) {
 	console.log('Active service worker found, no need to register')
