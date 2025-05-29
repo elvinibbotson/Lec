@@ -251,7 +251,7 @@ async function readData() {
 	root=await navigator.storage.getDirectory();
 	console.log('OPFS root directory: '+root);
 	var persisted=await navigator.storage.persist();
-	alert('persisted: '+persisted);
+	console.log('persisted: '+persisted);
 	var handle=await root.getFileHandle('LecData');
 	var file=await handle.getFile();
 	var loader=new FileReader();
@@ -284,7 +284,7 @@ async function writeData() {
 id('backupButton').addEventListener('click',backup);
 function backup() {
   	console.log("save backup");
-	var fileName='Lec.json';
+	var fileName='LecData.json';
 	var data={'logs': logs, 'charges':charges};
 	var json=JSON.stringify(data);
 	var blob=new Blob([json],{type:"data:application/json"});
