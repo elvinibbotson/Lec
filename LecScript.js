@@ -250,11 +250,8 @@ function populateList() {
 async function readData() {
 	root=await navigator.storage.getDirectory();
 	console.log('OPFS root directory: '+root);
-	/*
 	var persisted=await navigator.storage.persist();
-	// var persisted=await navigator.storage.persisted();
-	console.log('persisted: '+persisted);
-	*/
+	alert('persisted: '+persisted);
 	var handle=await root.getFileHandle('LecData');
 	var file=await handle.getFile();
 	var loader=new FileReader();
