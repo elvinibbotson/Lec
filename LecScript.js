@@ -17,6 +17,7 @@ var currentDialog;
 var startX;
 var months="JanFebMarAprMayJunJulAugSepOctNovDec";
 var capacity=48; // usable battery capacity (kWh) for Peugeot e-208
+var root; // OPFS root directory
 // EVENT LISTENERS
 id('main').addEventListener('touchstart', function(event) {
     // console.log(event.changedTouches.length+" touches");
@@ -77,8 +78,11 @@ function addChargeLog() {
 	charge.endCharge=parseInt(id('logEndCharge').value);
 	console.log('add charge log: '+charge.date+'; '+charge.miles+'; '+charge.startCharge+'-'+charge.endCharge);
 	charges.push(charge); // save to charges[]
+	writeData();
+	/*
 	chargeData=JSON.stringify(charges);
-	window.localStorage.setItem('chargeData',chargeData); 
+	window.localStorage.setItem('chargeData',chargeData);
+	*/
     toggleDialog('logDialog',false);
     populateList();
 }
@@ -91,8 +95,11 @@ id('buttonSaveLog').addEventListener('click',function() {
 	charge.endCharge=parseInt(id('logEndCharge').value);
 	console.log('update charge log '+logIndex+': '+charge.date+'; '+charge.miles+'; '+charge.startCharge+'-'+charge.endCharge);
 	charges[logIndex]=charge;
+	writeData();
+	/*
 	var chargeData=JSON.stringify(charges);
-	window.localStorage.setItem('chargeData',chargeData); 
+	window.localStorage.setItem('chargeData',chargeData);
+	*/
     toggleDialog('logDialog',false);
     populateList();
 })
@@ -100,8 +107,11 @@ id('buttonSaveLog').addEventListener('click',function() {
 id('buttonDeleteLog').addEventListener('click', function() {
 	console.log('delete charge log '+logIndex);
 	charges.splice(logIndex,1);
+	writeData();
+	/*
 	var chargeData=JSON.stringify(charges);
 	window.localStorage.setItem('chargeData',chargeData);
+	*/
 	toggleDialog("logDialog", false);
 	populateList();
 });
@@ -230,11 +240,50 @@ function populateList() {
 	mpk=Math.round(mpk);
  	mpk/=10; // one decimal place
 	id('heading').innerText='Peugeot e208: '+mpk+' miles/kWh';
+	/*
 	logData=JSON.stringify(logs);
 	window.localStorage.setItem('logData',logData);
 	console.log('logs listed & data saved');
+	*/
 }
-// IMPORT/BACKUP
+// DATA
+async function readData() {
+	root=await navigator.storage.getDirectory();
+	console.log('OPFS root directory: '+root);
+	/*
+	var persisted=await navigator.storage.persist();
+	// var persisted=await navigator.storage.persisted();
+	console.log('persisted: '+persisted);
+	*/
+	var handle=await root.getFileHandle('LecData');
+	var file=await handle.getFile();
+	var loader=new FileReader();
+    loader.addEventListener('load',function(evt) {
+        	var data=evt.target.result;
+        	console.log('data: '+data.length+' bytes');
+      		var json=JSON.parse(data);
+      		logs=json.logs;
+      		charges=json.charges;
+      		console.log(logs.length+' logs and '+charges.length+' read');
+      		logs.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)}); // date order
+      		charges.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)});
+			populateList();
+    	});
+	loader.addEventListener('error',function(event) {
+    	alert('load failed - '+event);
+    	// var handle=await root.getFileHandle('LecData',{create:true}); // ensure file exists
+	});
+	loader.readAsText(file);
+}
+async function writeData() {
+	var data={'logs': logs,'charges':charges};
+	var handle=await root.getFileHandle('LecData',{create:true});
+	var json=JSON.stringify(data);
+	var writable=await handle.createWritable();
+    await writable.write(json);
+    await writable.close();
+	console.log('data saved to LecData');
+}
 id('backupButton').addEventListener('click',backup);
 function backup() {
   	console.log("save backup");
@@ -262,9 +311,12 @@ id("fileChooser").addEventListener('change',function() {
     fileReader.addEventListener('load', function(evt) {
 	    console.log("file read: "+evt.target.result);
     	var data=evt.target.result;
-    	console.log('data... logs: '+data.logs+'; charges: '+data.logs);
     	var json=JSON.parse(data);
-    	console.log("json: "+json);
+    	logs=json.logs;
+    	charges=json.charges;
+    	console.log(logs.length+' logs & '+charges.length+' charges');
+    	writeData();
+    	/*
     	logs=[];
     	for(var i=0;i<json.logs.length;i++) { // discard redundant log IDs
     		logs[i]={};
@@ -277,6 +329,7 @@ id("fileChooser").addEventListener('change',function() {
     	charges=json.charges;
     	chargeData=JSON.stringify(charges);
     	window.localStorage.setItem('chargeData',chargeData);
+    	*/
     	toggleDialog('importDialog',false);
     	display("logs imported - restart");
     });
@@ -286,6 +339,8 @@ id("fileChooser").addEventListener('change',function() {
 scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
+readData();
+/*
 chargeData=window.localStorage.getItem('chargeData');
 console.log('chargeData: '+chargeData);
 if(chargeData && chargeData!='undefined') {
@@ -301,6 +356,7 @@ if(logData && logData!='undefined') {
 	populateList();
 }
 else toggleDialog('importDialog',true);
+*/
 // implement service worker if browser is PWA friendly 
 if (navigator.serviceWorker.controller) {
 	console.log('Active service worker found, no need to register')
