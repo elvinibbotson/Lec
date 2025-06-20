@@ -16,8 +16,9 @@ var currentLog=null
 var currentDialog;
 var startX;
 var months="JanFebMarAprMayJunJulAugSepOctNovDec";
+var backupDay;
 var capacity=48; // usable battery capacity (kWh) for Peugeot e-208
-var root; // OPFS root directory
+// var root; // OPFS root directory
 // EVENT LISTENERS
 id('main').addEventListener('touchstart', function(event) {
     // console.log(event.changedTouches.length+" touches");
@@ -78,7 +79,7 @@ function addChargeLog() {
 	charge.endCharge=parseInt(id('logEndCharge').value);
 	console.log('add charge log: '+charge.date+'; '+charge.miles+'; '+charge.startCharge+'-'+charge.endCharge);
 	charges.push(charge); // save to charges[]
-	writeData();
+	save();
 	/*
 	chargeData=JSON.stringify(charges);
 	window.localStorage.setItem('chargeData',chargeData);
@@ -95,7 +96,7 @@ id('buttonSaveLog').addEventListener('click',function() {
 	charge.endCharge=parseInt(id('logEndCharge').value);
 	console.log('update charge log '+logIndex+': '+charge.date+'; '+charge.miles+'; '+charge.startCharge+'-'+charge.endCharge);
 	charges[logIndex]=charge;
-	writeData();
+	save();
 	/*
 	var chargeData=JSON.stringify(charges);
 	window.localStorage.setItem('chargeData',chargeData);
@@ -107,7 +108,7 @@ id('buttonSaveLog').addEventListener('click',function() {
 id('buttonDeleteLog').addEventListener('click', function() {
 	console.log('delete charge log '+logIndex);
 	charges.splice(logIndex,1);
-	writeData();
+	save();
 	/*
 	var chargeData=JSON.stringify(charges);
 	window.localStorage.setItem('chargeData',chargeData);
@@ -247,7 +248,28 @@ function populateList() {
 	*/
 }
 // DATA
-async function readData() {
+function load() {
+	var data=window.localStorage.getItem('LecData');
+	if(!data) {
+		id('restoreMessage').innerText='no data - restore?';
+		toggleDialog('restoreDialog',true);
+		return;
+	}
+	var json=JSON.parse(data);
+	logs=json.logs;
+	charges=json.charges;
+	console.log(logs.length+' logs and '+charges.length+' read');
+	logs.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)}); // date order
+	charges.sort(function(a,b) {return Date.parse(a.date)-Date.parse(b.date)});
+	populateList();
+	today=Math.floor(new Date().getTime()/86400000);
+	var days=today-backupDay;
+	if(days>15) days='ages';
+	if(days>4) { // backup reminder every 5 days
+		id('backupMessage').innerText=days+' since last backup';
+		toggleDialog('backupDialog',true);
+	}
+	/*
 	root=await navigator.storage.getDirectory();
 	console.log('OPFS root directory: '+root);
 	var persisted=await navigator.storage.persist();
@@ -268,17 +290,21 @@ async function readData() {
     	});
 	loader.addEventListener('error',function(event) {
     	alert('load failed - '+event);
-    	// var handle=await root.getFileHandle('LecData',{create:true}); // ensure file exists
 	});
 	loader.readAsText(file);
+	*/
 }
-async function writeData() {
+function save() {
 	var data={'logs': logs,'charges':charges};
+	var json=JSON.stringify(data);
+	window.localStorage.setItem('LecData',json);
+	/*
 	var handle=await root.getFileHandle('LecData',{create:true});
 	var json=JSON.stringify(data);
 	var writable=await handle.createWritable();
     await writable.write(json);
     await writable.close();
+    */
 	console.log('data saved to LecData');
 }
 id('backupButton').addEventListener('click',backup);
@@ -298,7 +324,7 @@ function backup() {
     a.click();
     display(fileName+" saved to downloads folder");
 }
-id('importButton').addEventListener('click',function() {
+id('restoreButton').addEventListener('click',function() {
 	toggleDialog('importDialog',true);
 });
 id("fileChooser").addEventListener('change',function() {
@@ -312,7 +338,7 @@ id("fileChooser").addEventListener('change',function() {
     	logs=json.logs;
     	charges=json.charges;
     	console.log(logs.length+' logs & '+charges.length+' charges');
-    	writeData();
+    	save();
     	/*
     	logs=[];
     	for(var i=0;i<json.logs.length;i++) { // discard redundant log IDs
@@ -327,8 +353,9 @@ id("fileChooser").addEventListener('change',function() {
     	chargeData=JSON.stringify(charges);
     	window.localStorage.setItem('chargeData',chargeData);
     	*/
-    	toggleDialog('importDialog',false);
-    	display("logs imported - restart");
+    	toggleDialog('	restoreDialog',false);
+    	// display("logs imported - restart");
+    	load();
     });
     fileReader.readAsText(file);
 });
@@ -336,7 +363,10 @@ id("fileChooser").addEventListener('change',function() {
 scr.w=screen.width;
 scr.h=screen.height;
 console.log('screen size: '+scr.w+'x'+scr.h+'px');
-readData();
+backupDay=window.localStorage.getItem('backupDay');
+if(backupDay) console.log('last backup on day '+backupDay);
+else backupDay=0;
+load();
 /*
 chargeData=window.localStorage.getItem('chargeData');
 console.log('chargeData: '+chargeData);

@@ -19,13 +19,17 @@
 <div id='dataDialog' class='dialog'>
 	data
 	<button id='backupButton' class='text-button'>BACKUP</button>
-	<button id='importButton' class='text-button'>IMPORT</button>
+	<button id='restoreButton' class='text-button'>RESTORE</button>
 </div>
-<div id="importDialog" class="dialog">
-	<div class="dialog-title">Load from saved file</div>
+<div id="restoreDialog" class="dialog">
+	<div id='restoreMessage' class="dialog-title">Restore data from saved file</div>
 	<input type="file" id="fileChooser">
-	<div class="dialog-body">(Imported data will replace any records you already have) or swipe left to start fresh.</div>
+	<div class="dialog-body">replaces any records you already have) or swipe left to start fresh.</div>
 </div>
+<div id='backupDialog' class='dialog'>
+		<div id='backupMessage'>data backup</div>
+		<button id='confirmBackup' class='text-button'>BACKUP</button>
+	</div>
 <div id='monthLogDialog' class='dialog'>
 	<div id='monthData' class='dialog-body'></div>
 	<div class="dialog-buttons">
