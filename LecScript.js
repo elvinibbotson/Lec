@@ -322,7 +322,6 @@ function backup() {
    	a.download=fileName;
     document.body.appendChild(a);
     a.click();
-    display(fileName+" saved to downloads folder");
 }
 id('restoreButton').addEventListener('click',function() {
 	toggleDialog('importDialog',true);
@@ -339,22 +338,7 @@ id("fileChooser").addEventListener('change',function() {
     	charges=json.charges;
     	console.log(logs.length+' logs & '+charges.length+' charges');
     	save();
-    	/*
-    	logs=[];
-    	for(var i=0;i<json.logs.length;i++) { // discard redundant log IDs
-    		logs[i]={};
-    		logs[i].date=json.logs[i].date;
-    		logs[i].miles=json.logs[i].miles;
-    		logs[i].percent=json.logs[i].percent;
-    	}
-    	logData=JSON.stringify(logs);
-    	window.localStorage.setItem('logData',logData);
-    	charges=json.charges;
-    	chargeData=JSON.stringify(charges);
-    	window.localStorage.setItem('chargeData',chargeData);
-    	*/
     	toggleDialog('	restoreDialog',false);
-    	// display("logs imported - restart");
     	load();
     });
     fileReader.readAsText(file);
