@@ -324,7 +324,7 @@ function backup() {
     a.click();
 }
 id('restoreButton').addEventListener('click',function() {
-	toggleDialog('importDialog',true);
+	toggleDialog('restoreDialog',true);
 });
 id("fileChooser").addEventListener('change',function() {
     var file=id('fileChooser').files[0];
@@ -351,23 +351,6 @@ backupDay=window.localStorage.getItem('backupDay');
 if(backupDay) console.log('last backup on day '+backupDay);
 else backupDay=0;
 load();
-/*
-chargeData=window.localStorage.getItem('chargeData');
-console.log('chargeData: '+chargeData);
-if(chargeData && chargeData!='undefined') {
-	charges=JSON.parse(chargeData); // restore saved charges
-	console.log(charges.length+' charges restored');
-}
-logData=window.localStorage.getItem('logData');
-console.log('logData: '+logData);
-if(logData && logData!='undefined') {
-	logs=JSON.parse(logData); // restore saved logs
-	console.log(logs.length+' logs restored');
-	logs.sort(function(a,b) { return Date.parse(a.date)-Date.parse(b.date)}); // date order
-	populateList();
-}
-else toggleDialog('importDialog',true);
-*/
 // implement service worker if browser is PWA friendly 
 if (navigator.serviceWorker.controller) {
 	console.log('Active service worker found, no need to register')
